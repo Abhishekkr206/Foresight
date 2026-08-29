@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from threading import Lock
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,9 +17,31 @@ class Pipeline:
         self.settings = settings
         self.storage = storage
         self.broadcaster = broadcaster
+        self._latest_audio: dict[str, dict] = {}
+        self._latest_audio_lock = Lock()
+
+    def latest_audio(self, beacon_id: str) -> dict | None:
+        """Return the most recent decoded capture for a beacon, if available."""
+        with self._latest_audio_lock:
+            capture = self._latest_audio.get(beacon_id)
+            if capture is None:
+                return None
+            return {
+                **capture,
+                "data": bytes(capture["data"]),
+                "samples": capture["samples"].copy(),
+            }
 
     def process(self, db: Session, beacon: Beacon, data: bytes, filename: str, content_type: str, classification_hint: str | None = None) -> Event:
         samples = decode_audio(data)
+        with self._latest_audio_lock:
+            self._latest_audio[beacon.beacon_id] = {
+                "data": bytes(data),
+                "samples": samples.copy(),
+                "filename": filename,
+                "content_type": content_type,
+                "received_at": datetime.now(timezone.utc),
+            }
         classes = classify(samples, fallback_label=classification_hint)
         label, confidence, threat = threat_score(classes)
         aci = acoustic_complexity_index(samples)

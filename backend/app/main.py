@@ -5,11 +5,13 @@ import json
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
+import numpy as np
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from .assistant import AssistantRequest, AssistantResponse, answer_query
+from .audio import classifier_status
 from .config import get_settings
 from .db import Base, SessionLocal, engine, get_db
 from .models import Beacon, BeaconStatus, Correlation, Event
@@ -86,7 +88,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title='Foresight Forest Acoustic Surveillance API', version='1.0.0', lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.origins, allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 storage = AudioStorage(settings)
 pipeline = Pipeline(settings, storage, broadcast)
 app.state.simulator = Simulator(settings, SessionLocal, pipeline)
@@ -95,6 +104,11 @@ app.state.simulator = Simulator(settings, SessionLocal, pipeline)
 @app.get('/health')
 def health():
     return {'status': 'ok', 'service': 'foresight-api'}
+
+
+@app.get('/api/debug/classifier')
+def debug_classifier():
+    return classifier_status()
 
 
 @app.get('/api/beacons', response_model=list[BeaconOut])
@@ -138,6 +152,71 @@ async def ingest_audio(beacon_id: str, audio: UploadFile = File(...)):
     if len(data) > settings.max_audio_bytes:
         raise HTTPException(413, 'audio file too large')
     return await asyncio.to_thread(_process_uploaded_audio, beacon_id, data, audio.filename or 'capture.wav', audio.content_type or 'audio/wav')
+
+
+@app.get('/api/debug/audio/latest')
+def latest_debug_audio(beacon_id: str = 'BEACON_01'):
+    capture = pipeline.latest_audio(beacon_id)
+    if capture is None:
+        raise HTTPException(404, f'no audio capture received yet for {beacon_id}')
+    return Response(
+        content=capture['data'],
+        media_type='audio/wav',
+        headers={'Content-Disposition': f'inline; filename="{beacon_id}_latest.wav"'},
+    )
+
+
+@app.get('/api/debug/audio/latest/waveform')
+def latest_debug_waveform(beacon_id: str = 'BEACON_01', points: int = Query(1000, ge=32, le=5000)):
+    capture = pipeline.latest_audio(beacon_id)
+    if capture is None:
+        return {
+            'available': False,
+            'beacon_id': beacon_id,
+            'message': 'waiting for the first processed audio capture',
+            'values': [],
+        }
+    samples = capture['samples']
+    indices = np.linspace(0, len(samples) - 1, min(points, len(samples)), dtype=np.int64)
+    values = samples[indices].astype(float).tolist() if len(samples) else []
+    return {
+        'available': True,
+        'beacon_id': beacon_id,
+        'filename': capture['filename'],
+        'received_at': capture['received_at'],
+        'sample_rate': 16000,
+        'sample_count': int(len(samples)),
+        'duration_seconds': round(len(samples) / 16000, 3),
+        'rms': float(np.sqrt(np.mean(np.square(samples)))) if len(samples) else 0.0,
+        'peak': float(np.max(np.abs(samples))) if len(samples) else 0.0,
+        'values': values,
+    }
+
+
+@app.get('/api/debug/audio/live', response_class=HTMLResponse)
+def live_debug_waveform(beacon_id: str = 'BEACON_01'):
+    """A lightweight browser waveform monitor for the latest beacon capture."""
+    safe_beacon_id = beacon_id.replace('"', '')
+    return HTMLResponse(f'''<!doctype html>
+<html><head><meta charset="utf-8"><title>Foresight microphone waveform</title>
+<style>body{{font:16px system-ui;background:#f7f5ed;color:#24352a;margin:24px}}svg{{width:100%;height:360px;background:#fff;border:1px solid #cbd5c0;border-radius:12px}}#status{{margin:12px 0;color:#53665a}}code{{background:#e9eee5;padding:2px 5px;border-radius:4px}}</style></head>
+<body><h2>Microphone waveform: <code>{safe_beacon_id}</code></h2><div id="status">Waiting for a capture…</div>
+<svg id="plot" viewBox="0 0 1200 360" preserveAspectRatio="none"><path id="line" fill="none" stroke="#477a52" stroke-width="2"/></svg>
+<script>
+const beacon = {safe_beacon_id!r};
+async function update() {{
+  try {{
+    const r = await fetch('/api/debug/audio/latest/waveform?beacon_id=' + encodeURIComponent(beacon) + '&points=1200');
+    if (!r.ok) throw new Error('waiting for audio');
+    const d = await r.json();
+    if (!d.available) {{ document.getElementById('status').textContent = d.message; return; }}
+    const v = d.values; const path = v.map((x,i) => (i ? 'L' : 'M') + ' ' + (i * 1200 / Math.max(1,v.length-1)).toFixed(1) + ' ' + (180 - x * 155).toFixed(1)).join(' ');
+    document.getElementById('line').setAttribute('d', path);
+    document.getElementById('status').textContent = `${{d.duration_seconds}} s | RMS ${{d.rms.toFixed(4)}} | peak ${{d.peak.toFixed(4)}} | received ${{d.received_at}}`;
+  }} catch (e) {{ document.getElementById('status').textContent = 'Waiting for the next audio capture…'; }}
+}}
+update(); setInterval(update, 1000);
+</script></body></html>''')
 
 
 @app.get('/api/events', response_model=list[EventOut])

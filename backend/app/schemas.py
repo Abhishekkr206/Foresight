@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class HeartbeatIn(BaseModel):
     beacon_id: str = Field(min_length=1, max_length=64)
     timestamp: datetime | None = None
-    battery_percentage: float = Field(ge=0, le=100)
+    battery_percentage: float | None = Field(default=100.0, ge=0, le=100)
 
 
 class BeaconOut(BaseModel):

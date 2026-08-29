@@ -3,10 +3,13 @@ from dataclasses import dataclass
 
 THREAT_WEIGHTS: dict[str, float] = {
     "Chainsaw": 0.9,
+    "Power saw": 0.9,
     "Gunshot": 1.0,
+    "Gunshot, gunfire": 1.0,
     "Explosion": 1.0,
     "Vehicle": 0.6,
     "Engine": 0.5,
+    "Machine noise": 0.5,
     "Chopping": 0.7,
     "Bird vocalization": 0.0,
     "Wind": 0.0,

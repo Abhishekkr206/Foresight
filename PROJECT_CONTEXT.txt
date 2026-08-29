@@ -15,7 +15,7 @@ HARDWARE
 - Battery range is calibrated from 3.20V empty to 4.20V full.
 - No GPS, SD card, LoRa, or on-device AI.
 - ESP32 connects over Wi-Fi to a local router and laptop backend.
-- Audio: 16 kHz mono 16-bit WAV, 5-second captures, uploaded about every 7 seconds.
+- Audio: 16 kHz mono 16-bit WAV, 2-second captures, uploaded about every 2.5 seconds for low-latency detection.
 - Heartbeat: JSON POST about every 12 seconds with beacon ID and battery percentage.
 - Firmware file: firmware/foresight_beacon.ino.
 
