@@ -1,0 +1,12 @@
+{
+  "BEACON_01": { "lat": -4.00, "lon": -55.05, "is_real_hardware": true },
+  "BEACON_02": { "lat": -3.91, "lon": -55.16, "is_real_hardware": false },
+  "BEACON_03": { "lat": -3.95, "lon": -55.02, "is_real_hardware": false },
+  "BEACON_04": { "lat": -3.88, "lon": -54.92, "is_real_hardware": false },
+  "BEACON_05": { "lat": -3.98, "lon": -54.91, "is_real_hardware": false },
+  "BEACON_06": { "lat": -4.10, "lon": -54.96, "is_real_hardware": false },
+  "BEACON_07": { "lat": -4.13, "lon": -55.15, "is_real_hardware": false },
+  "BEACON_08": { "lat": -4.06, "lon": -55.19, "is_real_hardware": false },
+  "BEACON_09": { "lat": -3.87, "lon": -55.08, "is_real_hardware": false },
+  "BEACON_10": { "lat": -4.08, "lon": -54.90, "is_real_hardware": false }
+}

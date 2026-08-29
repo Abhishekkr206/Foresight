@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "react-bits": {
+      "command": "node",
+      "args": [
+        "frontend/node_modules/@youhai/react-bits-mcp-server/index.js"
+      ]
+    }
+  }
+}

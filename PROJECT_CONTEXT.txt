@@ -1,0 +1,101 @@
+FORESIGHT PROJECT CONTEXT
+
+Foresight is a low-cost forest acoustic surveillance system for conservation. It listens for environmental sounds, classifies possible threats, calculates soundscape health, correlates events across beacons, and displays everything in a live web dashboard.
+
+CURRENT DEMO SCOPE
+- 3 beacons total: 1 real ESP32-S3 beacon and 2 simulated beacons.
+- The hardware is not ready yet, so current work focuses on the simulation-only software demo.
+- The map uses representative coordinates from the Tapajos National Forest region in Brazil. The physical prototype is tested locally and is not currently deployed in the Amazon.
+
+HARDWARE
+- ESP32-S3 using the Arduino framework.
+- One INMP441 I2S MEMS microphone. No microphone array, TDOA, or direction estimation.
+- INMP441 wiring: BCLK GPIO5, WS GPIO6, DATA GPIO7, L/R to GND.
+- LiPo battery with voltage divider to ADC GPIO4.
+- Battery range is calibrated from 3.20V empty to 4.20V full.
+- No GPS, SD card, LoRa, or on-device AI.
+- ESP32 connects over Wi-Fi to a local router and laptop backend.
+- Audio: 16 kHz mono 16-bit WAV, 5-second captures, uploaded about every 7 seconds.
+- Heartbeat: JSON POST about every 12 seconds with beacon ID and battery percentage.
+- Firmware file: firmware/foresight_beacon.ino.
+
+LOCATION AND ZONES
+- Bounding box: latitude -4.05 to -3.95, longitude -55.10 to -55.00.
+- 4x4 grid with 16 zones named zone_0_0 through zone_3_3.
+- Beacon coordinates are manually stored in beacons_config.json. The firmware does not send coordinates.
+- Leaflet + React Leaflet + OpenStreetMap are used for the map.
+
+BACKEND
+- Python, FastAPI, SQLAlchemy, SQLite locally, Supabase PostgreSQL for hosting.
+- Main files are in backend/app/.
+- Audio flow: upload -> decode/resample -> classifier -> ACI -> threat score -> fusion -> event database -> optional audio storage -> correlation -> WebSocket dashboard update.
+- Optional TensorFlow Hub YAMNet integration is present. Without TensorFlow, a deterministic local classifier fallback supports the demo.
+- ACI currently uses NumPy FFT spectral calculations. Adaptive per-beacon baselines are not implemented.
+- Threat weights include Chainsaw 0.9, Gunshot 1.0, Explosion 1.0, Vehicle 0.6, Engine 0.5, Chopping 0.7; natural sounds have zero threat weight.
+- Fusion: final_score = 0.7 * threat_score + 0.3 * aci_drop.
+- Server timestamps are trusted instead of device timestamps.
+- Audio processing uses background workers so inference does not block the FastAPI event loop.
+
+DATABASE TABLES
+- beacons: beacon ID, latitude, longitude, real/simulated flag.
+- events: beacon, timestamp, sound class, confidence, threat score, ACI, final score, signal strength, audio URL, confirmation flag.
+- correlations: related event IDs, strongest-signal beacon estimate, timestamp.
+- beacon_status: beacon ID, last heartbeat, battery percentage. Active state is derived from a timeout.
+
+SIMULATION
+- Each zone has a looping ambient WAV file in backend/audio/zones/.
+- Threats are simulated by cleanly swapping a zone from ambient audio to generated threat audio, then returning to ambient.
+- Supported trigger sounds: chainsaw, gunshot, vehicle, engine, chopping.
+- Simulated batteries slowly decay.
+- Simulated and real audio use the same backend pipeline.
+
+FRONTEND
+- React + Vite + Tailwind CSS v4 + React Router + React Leaflet.
+- /dashboard: monitoring map, beacon state, event feed, filters, ACI chart, forest health, correlation details, replay, and Gemini assistant.
+- /simulation: editable simulation controls for start/stop, zone, sound, duration, trigger, and zone activity.
+- The UI has a light warm palette, medium-large map, and collapsible left information sidebar.
+- Sidebar shows system status, beacon count, coverage, reference location, context, and prototype status.
+- Open the frontend at http://localhost:5173/dashboard.
+
+GEMINI ASSISTANT
+- Model: gemini-3.1-flash-lite.
+- Backend-only Gemini API integration; the browser never receives the API key.
+- Endpoint: POST /api/assistant/query with {"prompt":"..."}.
+- Gemini can call only safe read-only tools: query_events, get_beacon_status, get_aci_trend.
+- No model-generated SQL, database mutation, simulation control, or hardware control.
+- Local deterministic fallback is used when Gemini is disabled or unavailable.
+- Enable with ASSISTANT_ENABLED=true and GEMINI_API_KEY in backend/.env.
+
+SUPABASE
+- Intended for hosted PostgreSQL and Supabase Storage audio files.
+- Current storage code uses Supabase when credentials and the SDK are configured, otherwise it falls back to local uploads/.
+- Free-plan demo limits to remember: about 500 MB database, 1 GB Storage, 50 MB maximum file size, and limited bandwidth/Realtime quotas.
+- Save only threat events and add retention cleanup before production use.
+
+ENVIRONMENT
+- Template: backend/.env.example.
+- Important variables: DATABASE_URL, ENABLE_SIMULATION, ASSISTANT_ENABLED, GEMINI_API_KEY, GEMINI_MODEL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET, CORS_ORIGINS.
+- Never commit real secrets.
+
+EXCLUDED FEATURES
+- No custom GRU because there is no trustworthy labeled training data.
+- No BirdNET because ACI already covers general soundscape activity.
+- No TDOA/direction estimation because each beacon has one microphone.
+
+CURRENT STATUS
+- Backend API, simulation, database, dashboard, separate routes, light UI, Gemini adapter, firmware starter, and environment template are implemented.
+- Backend tests pass and frontend production build passes.
+- Hardware validation, live Gemini verification, Supabase setup, audio cleanup, deployment, and final documentation remain.
+
+LOCAL RUN
+Backend:
+  cd backend
+  python -m uvicorn app.main:app --reload --port 8000
+
+Frontend:
+  cd frontend
+  npm run dev
+
+Backend health: http://localhost:8000/health
+Dashboard: http://localhost:5173/dashboard
+Simulation: http://localhost:5173/simulation
