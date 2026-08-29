@@ -169,6 +169,20 @@ def _fallback_features(samples: np.ndarray, sample_rate: int) -> dict[str, float
 
 
 def classify(samples: np.ndarray, sample_rate: int = 16_000, fallback_label: str | None = None) -> dict[str, float]:
+    # Simulation threat triggers carry an explicit sound selection. Honour
+    # that selection so generic YAMNet labels such as "Tools" do not make a
+    # chainsaw or gunshot demo fall below the threat threshold. Hardware and
+    # ambient captures still use YAMNet normally because they have no hint.
+    simulation_threat_labels = {
+        "chainsaw": "Chainsaw",
+        "gunshot": "Gunshot",
+        "vehicle": "Vehicle",
+        "engine": "Engine",
+        "chopping": "Chopping",
+    }
+    if fallback_label and fallback_label.lower() in simulation_threat_labels:
+        label = simulation_threat_labels[fallback_label.lower()]
+        return {label: 0.92}
     model = _yamnet()
     if model is not None:
         try:

@@ -9,11 +9,11 @@ const fallbackBeacons = [
 export default function Sidebar({ open, onToggle, health, summary = {}, beacons = [], selectedBeaconId = null, onBeaconSelect = () => {}, highlightedBeaconIds = [] }) {
   const nodes = beacons.length ? beacons : fallbackBeacons;
   return <aside className={`dashboard-sidebar fixed inset-y-0 left-0 z-40 flex flex-col border-r transition-all duration-300 ${open ? 'w-72' : 'w-[76px]'}`}>
+    <button onClick={onToggle} aria-label={open ? 'Collapse information panel' : 'Expand information panel'} className="sidebar-toggle absolute right-3 top-7 z-100 flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-slate-700 transition hover:bg-slate-100 active:scale-[.98]">
+      {open ? <ChevronLeft size={16} strokeWidth={2} /> : <ChevronRight size={16} strokeWidth={2} />}
+    </button>
     <div className="sidebar-header relative flex h-20 items-center gap-3 border-b px-4">
       {open && <div className="logo-window logo-window-open"><img src="/logo.png" alt="Foresight" className="logo-wordmark" /></div>}
-      <button onClick={onToggle} aria-label={open ? 'Collapse information panel' : 'Expand information panel'} className="sidebar-toggle absolute right-3 top-6 flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-slate-700 transition hover:bg-slate-100 active:scale-[.98]">
-        {open ? <ChevronLeft size={16} strokeWidth={2} /> : <ChevronRight size={16} strokeWidth={2} />}
-      </button>
     </div>
     <div className="sidebar-scroll flex-1 overflow-auto p-4">
       {open ? <>

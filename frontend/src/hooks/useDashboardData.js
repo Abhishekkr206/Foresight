@@ -4,7 +4,7 @@ import { getJson } from '../services/api';
 
 export default function useDashboardData() {
   const [beacons, setBeacons] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [summary, setSummary] = useState({ beacon_count: 0, active_beacon_count: 0, confirmed_events_today: 0, forest_health_score: 100, active_threat_count: 0 });
   const [simulator, setSimulator] = useState({ running: false, worker_healthy: false, zones: {} });
@@ -31,21 +31,18 @@ export default function useDashboardData() {
   const [highlightedEvents, setHighlightedEvents] = useState([]);
   const [assistantFilters, setAssistantFilters] = useState({});
   const audioRef = useRef(null);
+  const refreshSequence = useRef(0);
+  const refreshTimer = useRef(null);
 
   const refresh = async () => {
+    const requestId = ++refreshSequence.current;
     try {
-      const params = new URLSearchParams({ limit: '100' });
-      if (filterBeacon !== 'all') params.set('beacon_id', filterBeacon);
-      if (confirmedOnly) params.set('confirmed', 'true');
-      if (filterLevel === 'normal') params.set('max_final_score', String(THREAT_THRESHOLD));
-      if (filterLevel === 'threat') params.set('min_final_score', String(THREAT_THRESHOLD));
-      if (filterLevel === 'high') params.set('min_final_score', '.75');
-      if (assistantFilters.threat_score_min !== undefined) params.set('min_final_score', String(assistantFilters.threat_score_min));
-      if (assistantFilters.threat_score_max !== undefined) params.set('max_final_score', String(assistantFilters.threat_score_max));
+      const params = new URLSearchParams({ limit: '500' });
       const [beaconData, eventData, statusData, summaryData, simulationData] = await Promise.all([
         getJson('/api/beacons'), getJson(`/api/events?${params}`), getJson('/api/status'), getJson('/api/summary'), getJson('/api/simulation/status'),
       ]);
-      setBeacons(beaconData); setEvents(eventData); setStatuses(statusData); setSummary(summaryData); setSimulator(simulationData);
+      if (requestId !== refreshSequence.current) return;
+      setBeacons(beaconData); setAllEvents(eventData); setStatuses(statusData); setSummary(summaryData); setSimulator({ ...simulationData, _receivedAt: Date.now() });
       if (!aciBeacon && beaconData.length) setAciBeacon(beaconData[0].beacon_id);
       setError('');
     } catch (requestError) { setError(requestError.message); }
@@ -68,20 +65,20 @@ export default function useDashboardData() {
             : current);
         }
       } catch {}
-      refresh();
+      window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(refresh, 250);
     };
-    const timer = setInterval(refresh, 10000);
-    return () => { socket.close(); clearInterval(timer); };
-  }, [filterBeacon, filterLevel, confirmedOnly, assistantFilters]);
+    return () => { socket.close(); window.clearTimeout(refreshTimer.current); };
+  }, []);
 
-  useEffect(() => { if (aciBeacon) getJson(`/api/aci?beacon_id=${encodeURIComponent(aciBeacon)}&limit=40`).then(setAciData).catch(() => {}); }, [aciBeacon, events.length]);
+  useEffect(() => { if (aciBeacon) getJson(`/api/aci?beacon_id=${encodeURIComponent(aciBeacon)}&limit=40`).then(setAciData).catch(() => {}); }, [aciBeacon, allEvents.length]);
 
   const selectEvent = async (event) => { setSelectedEvent({ event }); try { const [detail, related] = await Promise.all([getJson(`/api/events/${event.id}`), getJson(`/api/events/${event.id}/correlation`)]); setSelectedEvent(detail); setCorrelation(related); } catch (requestError) { setError(requestError.message); } };
   const callSimulation = async (path, options) => {
     setBusy(true);
     try {
       const result = await getJson(path, options);
-      setSimulator(result);
+      setSimulator({ ...result, _receivedAt: Date.now() });
       setError('');
       return result;
     } catch (requestError) { setError(requestError.message); return null; }
@@ -94,6 +91,28 @@ export default function useDashboardData() {
     const result = await callSimulation('/api/simulation/trigger', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ zone: selectedZone, sound, duration_seconds: Number(duration) }) });
     if (!result) setSimulationNotice({ kind: 'error', text: 'Trigger failed. Check the error above.' });
     window.setTimeout(refresh, 1200);
+  };
+  const triggerMany = async (items) => {
+    if (!items.length) return null;
+    setBusy(true);
+    setSimulationNotice({ kind: 'pending', text: 'Triggering ' + items.length + ' queued scenario' + (items.length === 1 ? '' : 's') + '…' });
+    try {
+      const results = await Promise.all(items.map((item) => getJson('/api/simulation/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zone: item.zone, sound: item.sound, duration_seconds: Number(item.duration) }),
+      })));
+      const latest = results[results.length - 1];
+      setSimulator({ ...latest, _receivedAt: Date.now() });
+      setSimulationNotice({ kind: 'success', text: items.length + ' scenario' + (items.length === 1 ? '' : 's') + ' accepted and running.' });
+      setError('');
+      window.setTimeout(refresh, 1200);
+      return results;
+    } catch (requestError) {
+      setError(requestError.message);
+      setSimulationNotice({ kind: 'error', text: 'One or more queued triggers failed.' });
+      return null;
+    } finally { setBusy(false); }
   };
   const playReplay = () => { if (!audioRef.current) return; audioRef.current.currentTime = 0; audioRef.current.play().catch(() => setError('Audio could not be played.')); };
   const askAssistant = async (event) => {
@@ -114,7 +133,17 @@ export default function useDashboardData() {
     finally { setAssistantBusy(false); }
   };
 
+  const events = allEvents.filter((event) => {
+    if (filterBeacon !== 'all' && event.beacon_id !== filterBeacon) return false;
+    if (confirmedOnly && !event.is_confirmed) return false;
+    if (filterLevel === 'normal' && event.final_score > THREAT_THRESHOLD) return false;
+    if (filterLevel === 'threat' && event.final_score < THREAT_THRESHOLD) return false;
+    if (filterLevel === 'high' && event.final_score < 0.75) return false;
+    if (assistantFilters.threat_score_min !== undefined && event.threat_score < assistantFilters.threat_score_min) return false;
+    if (assistantFilters.threat_score_max !== undefined && event.threat_score > assistantFilters.threat_score_max) return false;
+    return true;
+  });
   const statusById = Object.fromEntries(statuses.map((status) => [status.beacon_id, status]));
   const sidebarBeacons = beacons.map((beacon) => ({ ...beacon, active: statusById[beacon.beacon_id]?.active, battery_percentage: statusById[beacon.beacon_id]?.battery_percentage }));
-  return { beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, sound, setSound, duration, setDuration, connected, busy, error, simulationNotice, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, start, stop, trigger, playReplay, activeThreats: summary.active_threat_count > 0 };
+  return { beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, sound, setSound, duration, setDuration, connected, busy, error, simulationNotice, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, refresh, start, stop, trigger, triggerMany, playReplay, activeThreats: summary.active_threat_count > 0 };
 }

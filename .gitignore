@@ -58,3 +58,4 @@ Thumbs.db
 .agents/
 .codex/
 .mcp.json
+backend/.venv-yamnet/

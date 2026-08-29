@@ -137,7 +137,7 @@ button:active { transform: scale(.98); }
 .assistant-collapsed .assistant-toggle { order: -1; }
 @media (min-width: 1280px) {
   .dashboard-sidebar:not(:has(.logo-window-open)) .sidebar-header { justify-content: center; padding-left: 8px; padding-right: 8px; }
-  .dashboard-sidebar:not(:has(.logo-window-open)) .sidebar-toggle { right: auto; top: 12px; }
+  .dashboard-sidebar:not(:has(.logo-window-open)) .sidebar-toggle { right: 12px; }
   .dashboard-sidebar:not(:has(.logo-window-open)) .sidebar-collapsed-status { padding-top: 18px; }
   .dashboard-assistant.assistant-collapsed { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 18px; padding-top: 18px !important; }
   .dashboard-assistant.assistant-collapsed .assistant-toggle { order: -1; }
@@ -154,3 +154,4 @@ button:active { transform: scale(.98); }
 .threat-zone-pulse { animation: threat-zone-pulse 1.8s ease-in-out infinite; transform-origin: center; }
 @keyframes threat-zone-pulse { 0%, 100% { opacity: .82; } 50% { opacity: 1; } }
 .threat-beacon { filter: drop-shadow(0 0 8px #dc2626); }
+
