@@ -151,3 +151,6 @@ button:active { transform: scale(.98); }
 .map-view-toggle button { border: 0; }
 .map-view-toggle button:focus-visible { outline: 2px solid #588157; outline-offset: 1px; }
 .selected-chunk-label { pointer-events: none; bottom: 12px; }
+.threat-zone-pulse { animation: threat-zone-pulse 1.8s ease-in-out infinite; transform-origin: center; }
+@keyframes threat-zone-pulse { 0%, 100% { opacity: .82; } 50% { opacity: 1; } }
+.threat-beacon { filter: drop-shadow(0 0 8px #dc2626); }

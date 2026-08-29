@@ -5,6 +5,7 @@ import AciChart from '../components/AciChart';
 import BeaconMap from '../components/BeaconMap';
 import Waveform from '../components/Waveform';
 import useDashboardData from '../hooks/useDashboardData';
+import { BOUNDS, THREAT_THRESHOLD } from '../config/constants';
 
 function EventActivity({ events, selectedEvent, highlightedEvents, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, beacons, activeThreats, onSelect }) {
   return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
@@ -31,6 +32,8 @@ export default function DashboardPage() {
   const [selectedBeaconId, setSelectedBeaconId] = useState(null);
   const { beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, error, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, playReplay, activeThreats } = data;
   const toggleBeacon = (beaconId) => setSelectedBeaconId((currentId) => currentId === beaconId ? null : beaconId);
+  const zoneFor = (beacon) => { const latStep = (BOUNDS.max_lat - BOUNDS.min_lat) / 4; const lonStep = (BOUNDS.max_lon - BOUNDS.min_lon) / 4; const row = Math.min(3, Math.max(0, Math.floor((beacon.latitude - BOUNDS.min_lat) / latStep))); const col = Math.min(3, Math.max(0, Math.floor((beacon.longitude - BOUNDS.min_lon) / lonStep))); return zone__; };
+  const handleEventSelect = async (event) => { await selectEvent(event); const selected = beacons.find((beacon) => beacon.beacon_id === event.beacon_id); const eventIsThreat = event.final_score >= THREAT_THRESHOLD; setSelectedBeaconId(event.beacon_id); setHighlightedBeacons(eventIsThreat && selected ? beacons.filter((beacon) => zoneFor(beacon) === zoneFor(selected)).map((beacon) => beacon.beacon_id) : [event.beacon_id]); };
   const handleAssistantBeaconSelect = (beaconId) => toggleBeacon(beaconId);
   const rightPanel = <AssistantPanel messages={assistantMessages} prompt={assistantPrompt} onPromptChange={setAssistantPrompt} onSubmit={askAssistant} busy={assistantBusy} highlighted={highlightedBeacons.length > 0 || highlightedEvents.length > 0} highlightedBeacons={highlightedBeacons} highlightedEvents={highlightedEvents} onBeaconSelect={handleAssistantBeaconSelect} onClear={() => { setHighlightedBeacons([]); setHighlightedEvents([]); setSelectedBeaconId(null); }} />;
 
@@ -41,8 +44,9 @@ export default function DashboardPage() {
       </header>
       {error && <div className="mb-4 rounded-xl border border-threat/50 bg-slate-100 px-4 py-3 text-sm text-slate-700">{error}</div>}
       <section><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold text-slate-900">Coverage map</h2><span className="text-xs text-slate-600">OpenStreetMap</span></div><BeaconMap beacons={beacons} simulator={simulator} selectedZone={selectedZone} setSelectedZone={setSelectedZone} selectedEvent={selectedEvent} relatedBeacons={correlation.beacons || []} rippleBeacon={rippleBeacon} highlightedBeacons={highlightedBeacons} selectedBeaconId={selectedBeaconId} onBeaconSelect={toggleBeacon} /><p className="mt-3 text-xs text-moss-400">Representative coordinates. The physical beacon is tested locally.</p></div></section>
-      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]"><AciChart data={aciData} /><EventActivity events={events} selectedEvent={selectedEvent} highlightedEvents={highlightedEvents} filterBeacon={filterBeacon} setFilterBeacon={setFilterBeacon} filterLevel={filterLevel} setFilterLevel={setFilterLevel} confirmedOnly={confirmedOnly} setConfirmedOnly={setConfirmedOnly} beacons={beacons} activeThreats={activeThreats} onSelect={selectEvent} /></section>
+      <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]"><AciChart data={aciData} /><EventActivity events={events} selectedEvent={selectedEvent} highlightedEvents={highlightedEvents} filterBeacon={filterBeacon} setFilterBeacon={setFilterBeacon} filterLevel={filterLevel} setFilterLevel={setFilterLevel} confirmedOnly={confirmedOnly} setConfirmedOnly={setConfirmedOnly} beacons={beacons} activeThreats={activeThreats} onSelect={handleEventSelect} /></section>
       <section className="mt-4"><SelectedEvent selectedEvent={selectedEvent} correlation={correlation} setSelectedEvent={setSelectedEvent} setCorrelation={setCorrelation} playing={playing} setPlaying={setPlaying} audioRef={audioRef} playReplay={playReplay} /></section>
     </main>
   </DashboardShell>;
 }
+
