@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { API, THREAT_THRESHOLD } from '../config/constants';
+import { API, BOUNDS, THREAT_THRESHOLD } from '../config/constants';
 import { getJson } from '../services/api';
 
 export default function useDashboardData() {
@@ -122,7 +122,7 @@ export default function useDashboardData() {
     setAssistantBusy(true); setAssistantMessages((items) => [...items, { role: 'user', text: prompt }]); setAssistantPrompt('');
     try {
       const result = await getJson('/api/assistant/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) });
-      setAssistantMessages((items) => [...items, { role: 'assistant', text: result.answer, fallback: !result.used_llm, highlightedBeaconIds: result.highlight_beacon_ids || [], highlightedEventCount: (result.highlight_event_ids || []).length, selectedBeaconId: result.selected_beacon_id || null }]);
+      setAssistantMessages((items) => [...items, { role: 'assistant', text: result.answer, fallback: !result.used_llm, highlightedBeaconIds: result.highlight_beacon_ids || [], highlightedEventCount: (result.highlight_event_ids || []).length, selectedBeaconId: result.selected_beacon_id || null, context: result.context || {} }]);
       const filters = result.filters || {};
       if (filters.beacon_id) setFilterBeacon(filters.beacon_id);
       if (filters.confirmed !== undefined) setConfirmedOnly(filters.confirmed);
@@ -144,6 +144,21 @@ export default function useDashboardData() {
     return true;
   });
   const statusById = Object.fromEntries(statuses.map((status) => [status.beacon_id, status]));
-  const sidebarBeacons = beacons.map((beacon) => ({ ...beacon, active: statusById[beacon.beacon_id]?.active, battery_percentage: statusById[beacon.beacon_id]?.battery_percentage }));
+    const zoneFor = (beacon) => {
+    const latStep = (BOUNDS.max_lat - BOUNDS.min_lat) / 4;
+    const lonStep = (BOUNDS.max_lon - BOUNDS.min_lon) / 4;
+    const row = Math.min(3, Math.max(0, Math.floor((beacon.latitude - BOUNDS.min_lat) / latStep)));
+    const col = Math.min(3, Math.max(0, Math.floor((beacon.longitude - BOUNDS.min_lon) / lonStep)));
+    return `zone_${row}_${col}`;
+  };
+  const sidebarBeacons = beacons.map((beacon) => {
+    const latestEvent = allEvents.find((event) => event.beacon_id === beacon.beacon_id);
+    const eventAge = latestEvent?.timestamp ? Date.now() - new Date(latestEvent.timestamp).getTime() : Number.POSITIVE_INFINITY;
+    const scenarioThreat = Boolean(simulator?.zones?.[zoneFor(beacon)]?.threat);
+    const eventThreat = Boolean(latestEvent && latestEvent.final_score >= THREAT_THRESHOLD && eventAge <= 60_000);
+    const threatActive = scenarioThreat || eventThreat;
+    const severity = threatActive ? 'threat' : latestEvent?.final_score >= 0.45 ? 'warning' : 'normal';
+    return { ...beacon, active: statusById[beacon.beacon_id]?.active, battery_percentage: statusById[beacon.beacon_id]?.battery_percentage, severity, threat_active: threatActive };
+  });
   return { beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, sound, setSound, duration, setDuration, connected, busy, error, simulationNotice, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, refresh, start, stop, trigger, triggerMany, playReplay, activeThreats: summary.active_threat_count > 0 };
 }

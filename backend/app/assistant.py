@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from .config import Settings
 from .models import Event
-from .query import answer_local_query, get_aci_trend, get_beacon_status, query_events
+from .query import answer_local_query, get_aci_trend, get_beacon_status, get_forest_summary, query_events
 
 class AssistantRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=500)
@@ -19,19 +19,22 @@ class AssistantResponse(BaseModel):
     selected_event_id: int | None = None
     used_llm: bool = False
     tool_calls: list[str] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
     @field_validator("highlight_beacon_ids")
     @classmethod
     def unique_beacons(cls, value: list[str]) -> list[str]:
         return list(dict.fromkeys(value))[:20]
 
-TOOL_NAMES = {"query_events", "get_beacon_status", "get_aci_trend"}
+TOOL_NAMES = {"query_events", "get_beacon_status", "get_aci_trend", "get_forest_summary"}
 SYSTEM_INSTRUCTION = """You are Foresight's forest acoustic monitoring assistant.
 Answer only from data returned by available read-only tools. Never invent data.
+For health or overall-monitoring questions, use get_forest_summary and explain the score in one or two concise sentences.
+Include only a small amount of context; do not list every beacon unless asked.
 Threat scores are decimals from 0 to 1. Do not provide SQL or change data.
 Return compact JSON with keys: answer, filters, highlight_beacon_ids,
-highlight_event_ids, selected_beacon_id, selected_event_id.
+highlight_event_ids, selected_beacon_id, selected_event_id, context.
 filters may contain only threat_score_min, threat_score_max, beacon_id, confirmed,
-start_time, and end_time."""
+start_time, and end_time. Include context only when it helps explain the answer."""
 
 def _event_dict(event: Event) -> dict[str, Any]:
     return {"id": event.id, "beacon_id": event.beacon_id, "timestamp": event.timestamp.isoformat() if event.timestamp else None, "sound_class": event.sound_class, "threat_score": event.threat_score, "aci_value": event.aci_value, "final_score": event.final_score, "is_confirmed": event.is_confirmed}
@@ -48,6 +51,10 @@ def _safe_tool(name: str, args: dict[str, Any], db: Session, settings: Settings)
                 args[key] = max(0.0, min(1.0, float(args[key])))
         events = query_events(db, **args, limit=100)
         return {"events": [_event_dict(event) for event in events], "count": len(events)}
+    if name == "get_forest_summary":
+        if args:
+            raise ValueError("forest summary does not accept arguments")
+        return get_forest_summary(db, settings)
     if name == "get_beacon_status":
         if set(args) - {"beacon_id"}:
             raise ValueError("unsupported status query argument")
@@ -57,6 +64,19 @@ def _safe_tool(name: str, args: dict[str, Any], db: Session, settings: Settings)
     return {"trend": [{**item, "timestamp": item["timestamp"].isoformat() if item.get("timestamp") else None} for item in get_aci_trend(db, args["beacon_id"], args.get("time_range", "24h"))]}
 
 def _fallback(prompt: str, db: Session, settings: Settings) -> AssistantResponse:
+    normalized = prompt.lower()
+    health_terms = ("forest health", "soundscape health", "how is the forest", "is everything okay", "overall status", "why is the health", "health score")
+    if any(term in normalized for term in health_terms):
+        summary = get_forest_summary(db, settings)
+        health = summary['forest_health_score']
+        reasons = []
+        if summary['active_threat_count']:
+            reasons.append(f"{summary['active_threat_count']} active threat{'s' if summary['active_threat_count'] != 1 else ''} are lowering it")
+        else:
+            reasons.append('no active threats are currently lowering it')
+        reasons.append(f"ACI health is {summary['aci_health_score']}%")
+        answer = f"Forest health is currently {health}%. {'; '.join(reasons)}."
+        return AssistantResponse(answer=answer, context={'type': 'forest_summary', **summary})
     result = answer_local_query(prompt, db, settings)
     events = [_event_dict(event) for event in result.get("events", [])]
     return AssistantResponse(answer=result["answer"], filters=result.get("filters", {}), highlight_beacon_ids=list(dict.fromkeys(e["beacon_id"] for e in events)), highlight_event_ids=[e["id"] for e in events])
@@ -76,6 +96,7 @@ def answer_query(prompt: str, db: Session, settings: Settings) -> AssistantRespo
         client = genai.Client(api_key=settings.gemini_api_key)
         declarations = [
             {"name": "query_events", "description": "Find matching acoustic events.", "parameters": {"type": "OBJECT", "properties": {"threat_score_min": {"type": "NUMBER"}, "threat_score_max": {"type": "NUMBER"}, "beacon_id": {"type": "STRING"}, "confirmed": {"type": "BOOLEAN"}, "start_time": {"type": "STRING"}, "end_time": {"type": "STRING"}}}},
+            {"name": "get_forest_summary", "description": "Get the current forest health score and the small set of metrics that explain it.", "parameters": {"type": "OBJECT", "properties": {}}},
             {"name": "get_beacon_status", "description": "Get active state and battery for beacons.", "parameters": {"type": "OBJECT", "properties": {"beacon_id": {"type": "STRING"}}}},
             {"name": "get_aci_trend", "description": "Get ACI history for one beacon.", "parameters": {"type": "OBJECT", "required": ["beacon_id"], "properties": {"beacon_id": {"type": "STRING"}, "time_range": {"type": "STRING"}}}},
         ]

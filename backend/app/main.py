@@ -161,10 +161,23 @@ def latest_debug_audio(beacon_id: str = 'BEACON_01'):
         raise HTTPException(404, f'no audio capture received yet for {beacon_id}')
     return Response(
         content=capture['data'],
-        media_type='audio/wav',
+        media_type=capture.get('content_type') or 'audio/wav',
         headers={'Content-Disposition': f'inline; filename="{beacon_id}_latest.wav"'},
     )
 
+
+@app.get('/api/debug/audio/latest/meta')
+def latest_debug_audio_meta(beacon_id: str = 'BEACON_01'):
+    capture = pipeline.latest_audio(beacon_id)
+    if capture is None:
+        raise HTTPException(404, f'no audio capture received yet for {beacon_id}')
+    return {
+        'beacon_id': beacon_id,
+        'filename': capture['filename'],
+        'content_type': capture.get('content_type') or 'audio/wav',
+        'received_at': capture['received_at'],
+        'duration_seconds': round(len(capture['samples']) / 16000, 3),
+    }
 
 @app.get('/api/debug/audio/latest/waveform')
 def latest_debug_waveform(beacon_id: str = 'BEACON_01', points: int = Query(1000, ge=32, le=5000)):

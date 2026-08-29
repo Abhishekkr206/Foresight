@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import Settings
-from .models import BeaconStatus, Event
+from .models import Beacon, BeaconStatus, Event
 
 
 def query_events(
@@ -82,4 +82,42 @@ def answer_local_query(text: str, db: Session, settings: Settings) -> dict[str, 
         "answer": f"Found {len(records)} matching event{'s' if len(records) != 1 else ''}.",
         "filters": filters,
         "events": records,
+    }
+
+def _utc(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(timezone.utc)
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
+
+def get_forest_summary(db: Session, settings: Any) -> dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    beacons = db.scalars(select(Beacon)).all()
+    statuses = db.scalars(select(BeaconStatus)).all()
+    event_list = db.scalars(select(Event)).all()
+    active_threats = [event for event in event_list if event.final_score >= settings.event_threshold and _utc(event.timestamp) >= now - timedelta(seconds=settings.heartbeat_timeout_seconds)]
+    active_count = sum(now - _utc(status.last_seen) <= timedelta(seconds=settings.heartbeat_timeout_seconds) for status in statuses)
+    today_confirmed = [event for event in event_list if event.is_confirmed and _utc(event.timestamp) >= today]
+    recent_events = [event for event in event_list if _utc(event.timestamp) >= now - timedelta(minutes=5)]
+    latest_by_beacon: dict[str, Event] = {}
+    for event in recent_events:
+        current = latest_by_beacon.get(event.beacon_id)
+        if current is None or _utc(event.timestamp) > _utc(current.timestamp):
+            latest_by_beacon[event.beacon_id] = event
+    live_average_aci = sum(event.aci_value for event in latest_by_beacon.values()) / len(latest_by_beacon) if latest_by_beacon else settings.aci_baseline
+    aci_health = max(0.0, min(1.0, live_average_aci / settings.aci_baseline))
+    active_threat_score = max((event.final_score for event in active_threats), default=0.0)
+    threat_penalty = min(0.35, 0.35 * active_threat_score)
+    health = max(0.0, min(1.0, aci_health - threat_penalty))
+    return {
+        'beacon_count': len(beacons),
+        'active_beacon_count': active_count,
+        'confirmed_events_today': len(today_confirmed),
+        'live_average_aci': live_average_aci,
+        'aci_health_score': round(aci_health * 100, 1),
+        'active_threat_penalty': round(threat_penalty * 100, 1),
+        'health_window_minutes': 5,
+        'forest_health_score': round(health * 100, 1),
+        'active_threat_count': len(active_threats),
     }
