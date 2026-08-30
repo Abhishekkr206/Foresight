@@ -123,7 +123,7 @@ class Simulator:
                         if until and until < datetime.now(timezone.utc).timestamp():
                             self.overrides.pop(zone, None)
                             sound = "ambient"
-                        ambient_path = self.settings.simulation_audio_dir / f"{zone}_ambient.wav"
+                        ambient_path = self.settings.simulation_audio_dir / "ambient.wav"
                         threat_path = self.settings.simulation_threat_audio_dir / f"{sound}.wav"
                         test_path = self.settings.simulation_test_audio_dir / f"{sound}.wav"
                         if sound == "ambient" and ambient_path.is_file():

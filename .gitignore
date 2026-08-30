@@ -25,8 +25,8 @@ uploads/*
 !uploads/.gitkeep
 *.log
 
-# Downloaded/generated simulation audio (keep README files, not large media)
-backend/audio/**/*.wav
+# Simulation audio used by the deployed simulator
+!backend/audio/**/*.wav
 backend/audio/**/*.mp3
 backend/audio/**/*.ogg
 backend/audio/**/*.flac
