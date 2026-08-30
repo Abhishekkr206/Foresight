@@ -1,8 +1,19 @@
+import { CaretLeft, CaretRight, Radio, SlidersHorizontal, SquaresFour, Waveform as WaveformIcon } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import DashboardShell from '../components/DashboardShell';
 import useDashboardData from '../hooks/useDashboardData';
 import { zones } from '../config/constants';
 
+function SkeletonBlock({ className = '' }) {
+  return <span aria-hidden="true" className={`dashboard-skeleton-block ${className}`} />;
+}
+function SimulationLoadingSkeleton() {
+  const placeholderBeacons = ['BEACON_01', 'BEACON_02', 'BEACON_03', 'BEACON_04'];
+  return <div className="dashboard-boot simulation-boot min-h-screen" aria-busy="true" aria-label="Preparing scenario lab">
+    <aside className="dashboard-boot-sidebar"><div className="dashboard-boot-sidebar-header overflow-hidden bg-white"><img src="/logo.png" alt="Foresight" className="dashboard-boot-logo" /><button type="button" aria-label="Collapse information panel" className="dashboard-boot-icon-button"><CaretLeft weight="duotone" size={16} /></button></div><div className="dashboard-boot-sidebar-content"><div className="dashboard-boot-health"><div className="flex items-center justify-between"><span className="dashboard-boot-static-label">FOREST HEALTH</span><Radio weight="duotone" size={16} className="text-moss-500" /></div><SkeletonBlock className="mt-3 h-11 w-32" /><SkeletonBlock className="mt-3 h-2 w-28" /></div><div className="mt-3 grid grid-cols-2 gap-2"><SkeletonBlock className="h-16 w-full" /><SkeletonBlock className="h-16 w-full" /></div><div className="mt-6 flex items-center justify-between"><span className="dashboard-boot-static-label">BEACONS</span><SkeletonBlock className="h-2 w-12" /></div><div className="mt-3 space-y-2">{placeholderBeacons.map((beacon) => <div key={beacon} className="dashboard-boot-beacon"><span className="h-2 w-2 rounded-full bg-moss-300" /><div className="min-w-0 flex-1"><SkeletonBlock className="h-2 w-20" /><SkeletonBlock className="mt-2 h-2 w-14" /></div><WaveformIcon weight="duotone" size={13} className="text-slate-400" /></div>)}</div></div></aside>
+    <main className="dashboard-boot-main"><header className="dashboard-boot-topbar"><nav className="flex items-center gap-1 "><span className="dashboard-boot-nav-link"><SquaresFour weight="duotone" size={14} /> Monitor</span><span className="dashboard-boot-nav-link"><SlidersHorizontal weight="duotone" size={14} /> Scenarios</span></nav></header><div className="dashboard-boot-content simulation-boot-content"><div><span className="dashboard-boot-static-label">SCENARIO LAB</span><SkeletonBlock className="mt-3 h-9 w-56" /><SkeletonBlock className="mt-3 h-2 w-full max-w-xl" /></div><section className="dashboard-boot-card mt-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><SkeletonBlock className="h-4 w-36" /><SkeletonBlock className="mt-3 h-2 w-64" /></div><div className="flex items-center gap-3"><SkeletonBlock className="h-7 w-28" /><SkeletonBlock className="h-2 w-28" /></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><button type="button" className="dashboard-boot-static-button"><span className="dashboard-boot-static-icon"><Radio weight="duotone" size={15} /></span> Start simulation</button><button type="button" className="dashboard-boot-static-button dashboard-boot-static-button-muted"><span className="dashboard-boot-static-icon"><CaretRight weight="duotone" size={15} /></span> Stop simulation</button></div><div className="mt-6 grid gap-5 md:grid-cols-2"><div><span className="dashboard-boot-static-label">SELECTED ZONE</span><SkeletonBlock className="mt-2 h-11 w-full" /></div><div><span className="dashboard-boot-static-label">SOUND</span><SkeletonBlock className="mt-2 h-11 w-full" /></div><div><span className="dashboard-boot-static-label">DURATION</span><SkeletonBlock className="mt-2 h-11 w-full" /></div><div className="dashboard-boot-card dashboard-boot-inner-card"><SkeletonBlock className="h-3 w-32" /><SkeletonBlock className="mt-3 h-2 w-24" /></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><button type="button" className="dashboard-boot-static-button dashboard-boot-static-button-primary"><Radio weight="duotone" size={15} /> Trigger sound now</button><button type="button" className="dashboard-boot-static-button dashboard-boot-static-button-muted"><span className="text-lg leading-none">+</span> Add to trigger queue</button></div></section><section className="dashboard-boot-card mt-4"><div className="flex items-center justify-between"><div><SkeletonBlock className="h-4 w-28" /><SkeletonBlock className="mt-3 h-2 w-64" /></div><SkeletonBlock className="h-8 w-28" /></div><div className="mt-5 grid gap-2 sm:grid-cols-2"><SkeletonBlock className="h-14 w-full" /><SkeletonBlock className="h-14 w-full" /></div></section><section className="dashboard-boot-card mt-4"><SkeletonBlock className="h-4 w-28" /><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <div key={index} className="dashboard-boot-zone"><SkeletonBlock className="h-3 w-20" /><SkeletonBlock className="mt-3 h-2 w-24" /></div>)}</div></section></div></main>
+  </div>;
+}
 const tone = {
   success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   pending: 'border-amber-200 bg-amber-50 text-amber-800',
@@ -11,12 +22,14 @@ const tone = {
 };
 
 export default function SimulationPage() {
-  const { simulator, selectedZone, setSelectedZone, sound, setSound, duration, setDuration, busy, error, simulationNotice, start, stop, trigger, triggerMany, sidebarBeacons, summary } = useDashboardData();
+  const { initialLoading, simulator, selectedZone, setSelectedZone, sound, setSound, duration, setDuration, busy, error, simulationNotice, start, stop, trigger, triggerMany, sidebarBeacons, summary } = useDashboardData();
   const workerHealthy = simulator.worker_healthy !== false && simulator.running;
   const selectedState = simulator.zones?.[selectedZone];
   const cycleTime = simulator.last_cycle_at ? new Date(simulator.last_cycle_at).toLocaleTimeString() : 'Not yet';
   const zoneHasBeacon = (selectedState?.beacon_count || 0) > 0;
   const [queue, setQueue] = useState([]);
+  const [bootStartedAt] = useState(() => Date.now());
+  const [revealReady, setRevealReady] = useState(false);
   const [, setClock] = useState(Date.now());
   const snapshotAge = simulator._receivedAt ? Math.max(0, (Date.now() - simulator._receivedAt) / 1000) : 0;
   const remaining = selectedState?.remaining_seconds ? Math.max(0, Math.ceil(selectedState.remaining_seconds - snapshotAge)) : 0;
@@ -26,6 +39,13 @@ export default function SimulationPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+useEffect(() => {
+    if (initialLoading) return undefined;
+    const remaining = Math.max(0, 900 - (Date.now() - bootStartedAt));
+    const timer = window.setTimeout(() => setRevealReady(true), remaining);
+    return () => window.clearTimeout(timer);
+  }, [initialLoading, bootStartedAt]);
+  if (initialLoading || !revealReady) return <SimulationLoadingSkeleton />;
   const addToQueue = () => {
     if (!zoneHasBeacon) return;
     setQueue((items) => [...items, { id: selectedZone + '-' + Date.now() + '-' + Math.random(), zone: selectedZone, sound, duration: Number(duration) }]);
