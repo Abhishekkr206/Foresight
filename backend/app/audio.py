@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import math
+import os
 import wave
 from functools import lru_cache
 from pathlib import Path
@@ -10,6 +11,10 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
+MODEL_DIR = Path(__file__).resolve().parents[2] / 'backend' / 'models'
+LITE_MODEL_PATH = MODEL_DIR / 'yamnet.tflite'
+LITE_LABELS_PATH = MODEL_DIR / 'yamnet_labels.csv'
+CLASSIFIER_BACKEND = os.getenv('CLASSIFIER_BACKEND', 'full').lower()
 
 
 def decode_audio(data: bytes, sample_rate: int = 16_000) -> np.ndarray:
@@ -73,6 +78,25 @@ def _yamnet():
         return None
 
 
+@lru_cache(maxsize=1)
+def _lite_yamnet():
+    try:
+        from ai_edge_litert.interpreter import Interpreter
+
+        interpreter = Interpreter(model_path=str(LITE_MODEL_PATH))
+        interpreter.allocate_tensors()
+        return interpreter
+    except Exception as exc:
+        logger.warning("LiteRT YAMNet unavailable; using fallback classifier: %s", exc)
+        return None
+
+
+@lru_cache(maxsize=1)
+def _lite_yamnet_labels() -> list[str]:
+    with LITE_LABELS_PATH.open(newline='', encoding='utf-8') as source:
+        return [row['display_name'] for row in csv.DictReader(source)]
+
+
 def _canonical_label(label: str) -> str:
     """Map common YAMNet labels to the labels used by the threat scorer."""
     normalized = label.lower().replace('_', ' ').replace('-', ' ')
@@ -121,6 +145,16 @@ def _yamnet_labels(model) -> list[str]:
 
 def classifier_status() -> dict[str, object]:
     """Return the active classifier without running audio inference."""
+    if CLASSIFIER_BACKEND == 'lite':
+        interpreter = _lite_yamnet()
+        if interpreter is None:
+            return {'classifier': 'fallback', 'yamnet_loaded': False}
+        try:
+            labels = _lite_yamnet_labels()
+            return {'classifier': 'yamnet', 'backend': 'lite', 'yamnet_loaded': True, 'label_count': len(labels)}
+        except Exception as exc:
+            logger.warning('LiteRT YAMNet loaded but labels are unavailable: %s', exc)
+            return {'classifier': 'fallback', 'yamnet_loaded': False, 'error': str(exc)}
     model = _yamnet()
     if model is None:
         return {'classifier': 'fallback', 'yamnet_loaded': False}
@@ -183,17 +217,35 @@ def classify(samples: np.ndarray, sample_rate: int = 16_000, fallback_label: str
     if fallback_label and fallback_label.lower() in simulation_threat_labels:
         label = simulation_threat_labels[fallback_label.lower()]
         return {label: 0.92}
-    model = _yamnet()
-    if model is not None:
-        try:
-            scores, _, _ = model(samples.astype(np.float32))
-            values = np.asarray(scores).mean(axis=0)
-            labels = _yamnet_labels(model)
-            result = {_canonical_label(labels[i]): float(values[i]) for i in np.argsort(values)[-10:]}
-            logger.info('YAMNet classified audio: %s', result)
-            return result
-        except Exception as exc:
-            logger.warning('YAMNet inference failed; using fallback classifier: %s', exc)
+    if CLASSIFIER_BACKEND == 'lite':
+        interpreter = _lite_yamnet()
+        if interpreter is not None:
+            try:
+                input_info = interpreter.get_input_details()[0]
+                interpreter.resize_tensor_input(input_info['index'], [len(samples)], strict=False)
+                interpreter.allocate_tensors()
+                interpreter.set_tensor(input_info['index'], samples.astype(np.float32))
+                interpreter.invoke()
+                output_info = interpreter.get_output_details()[0]
+                values = np.asarray(interpreter.get_tensor(output_info['index'])).mean(axis=0)
+                labels = _lite_yamnet_labels()
+                result = {_canonical_label(labels[i]): float(values[i]) for i in np.argsort(values)[-10:]}
+                logger.info('LiteRT YAMNet classified audio: %s', result)
+                return result
+            except Exception as exc:
+                logger.warning('LiteRT YAMNet inference failed; using fallback classifier: %s', exc)
+    else:
+        model = _yamnet()
+        if model is not None:
+            try:
+                scores, _, _ = model(samples.astype(np.float32))
+                values = np.asarray(scores).mean(axis=0)
+                labels = _yamnet_labels(model)
+                result = {_canonical_label(labels[i]): float(values[i]) for i in np.argsort(values)[-10:]}
+                logger.info('YAMNet classified audio: %s', result)
+                return result
+            except Exception as exc:
+                logger.warning('YAMNet inference failed; using fallback classifier: %s', exc)
 
     # Deterministic local fallback for simulator/demo development and
     # installations where the optional YAMNet dependencies are absent.
