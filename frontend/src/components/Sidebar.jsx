@@ -1,4 +1,4 @@
-import { ActivityIcon, BatteryCharging, CaretLeft, CaretRight, Radio } from '@phosphor-icons/react';
+import { BatteryCharging, CaretLeft, CaretRight, Radio } from '@phosphor-icons/react';
 import BeaconAudioPlayer from './BeaconAudioPlayer';
 
 const fallbackBeacons = [
