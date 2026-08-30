@@ -1,3 +1,7 @@
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
 @import "tailwindcss";
 
 @theme {
@@ -14,13 +18,13 @@
   --color-moss-300: #A3B18A;
   --color-moss-400: #588157;
   --color-moss-500: #588157;
-  --color-threat: #3A5A40;
-  --color-warning: #A3B18A;
+  --color-threat: #B56E2A;
+  --color-warning: #D79A3B;
 }
 
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
-body { min-width: 320px; min-height: 100dvh; margin: 0; background: #DAD7CD; color: #344E41; font-family: ui-sans-serif, system-ui, sans-serif; }
+body { min-width: 320px; min-height: 100dvh; margin: 0; background: #DAD7CD; color: #344E41; font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
 #root { min-height: 100dvh; }
 button, a, input, select { transition-duration: 180ms; }
 button:active { transform: scale(.98); }
@@ -155,3 +159,339 @@ button:active { transform: scale(.98); }
 @keyframes threat-zone-pulse { 0%, 100% { opacity: .82; } 50% { opacity: 1; } }
 .threat-beacon { filter: drop-shadow(0 0 8px #dc2626); }
 .beacon-sidebar-row-threat { background: rgba(220,38,38,.14) !important; box-shadow: inset 3px 0 0 #dc2626, 0 4px 12px rgba(220,38,38,.10); } .beacon-sidebar-row-threat:hover { background: rgba(220,38,38,.20) !important; }
+/* Foresight instrument-panel system: light primary, pine secondary, amber alert. */
+:root {
+  --foresight-canvas: #F5F7F3;
+  --foresight-surface: #FFFFFF;
+  --foresight-surface-muted: #E9EFE8;
+  --foresight-pine: #1F3D2B;
+  --foresight-pine-soft: #DCE7DD;
+  --foresight-ink: #183025;
+  --foresight-muted: #64756A;
+  --foresight-amber: #B56E2A;
+  --foresight-amber-soft: #F3E4CF;
+  --radius-structural: 6px;
+  --radius-pill: 999px;
+}
+body { background: var(--foresight-canvas); color: var(--foresight-ink); font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+.telemetry, .dashboard-health-number, .dashboard-sidebar .text-5xl, .dashboard-sidebar .text-lg { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.dashboard-content { background: var(--foresight-canvas) !important; color: var(--foresight-ink) !important; }
+.dashboard-content section:not(.dashboard-assistant) > div, .event-activity-panel, .aci-chart-card { border-radius: var(--radius-structural) !important; background: var(--foresight-surface) !important; box-shadow: 0 8px 24px rgba(31,61,43,.08) !important; }
+.dashboard-content .rounded-xl, .dashboard-content .rounded-2xl, .dashboard-content .rounded-lg, .dashboard-sidebar .beacon-sidebar-row, .dashboard-assistant .assistant-message, .dashboard-assistant .assistant-empty, .beacon-audio-player { border-radius: var(--radius-structural) !important; }
+.dashboard-content .rounded-full, .dashboard-sidebar .rounded-full, .dashboard-assistant .rounded-full { border-radius: var(--radius-pill) !important; }
+.dashboard-sidebar { background: var(--foresight-surface-muted) !important; border-color: rgba(31,61,43,.22) !important; }
+.dashboard-sidebar .sidebar-health, .dashboard-sidebar .beacon-sidebar-row { border: 1px solid rgba(31,61,43,.14); box-shadow: none; }
+.dashboard-sidebar .sidebar-stats > div { background: var(--foresight-pine) !important; color: #F5F7F3; border-radius: var(--radius-structural) !important; }
+.dashboard-sidebar .sidebar-stats > div p { color: #F5F7F3 !important; }
+.app-topbar { background: var(--foresight-surface) !important; border-color: rgba(31,61,43,.18) !important; }
+.dashboard-assistant { background: var(--foresight-pine) !important; color: #F5F7F3; border-color: rgba(31,61,43,.35) !important; }
+.dashboard-assistant .text-slate-900, .dashboard-assistant .text-slate-800 { color: #F5F7F3 !important; }
+.dashboard-assistant .text-slate-700, .dashboard-assistant .text-slate-600, .dashboard-assistant .text-slate-500 { color: rgba(245,247,243,.72) !important; }
+.dashboard-assistant .assistant-message-ai { background: #294A36; border-color: rgba(245,247,243,.16); }
+.dashboard-assistant .assistant-message-user { background: #D79A3B; color: var(--foresight-ink); }
+.dashboard-assistant .assistant-toggle { background: var(--foresight-surface) !important; color: var(--foresight-pine) !important; border-color: rgba(245,247,243,.28) !important; }
+.dashboard-assistant input { border-color: rgba(245,247,243,.22) !important; background: #F5F7F3 !important; color: var(--foresight-ink) !important; }
+.dashboard-content .text-warning, .dashboard-content .text-threat { color: var(--foresight-amber) !important; }
+.dashboard-content .bg-warning, .dashboard-content .bg-threat { background: var(--foresight-amber) !important; }
+.dashboard-content .bg-moss-500, .dashboard-content button.bg-moss-500 { background: var(--foresight-pine) !important; }
+.dashboard-content .text-moss-400, .dashboard-content .text-moss-500 { color: var(--foresight-pine) !important; }
+.beacon-sidebar-row-selected { background: var(--foresight-amber-soft) !important; box-shadow: inset 3px 0 0 var(--foresight-amber) !important; }
+.beacon-sidebar-row-ai { background: var(--foresight-pine-soft) !important; box-shadow: inset 3px 0 0 var(--foresight-pine) !important; }
+.beacon-sidebar-row-threat { background: var(--foresight-amber-soft) !important; box-shadow: inset 3px 0 0 var(--foresight-amber), 0 0 0 1px rgba(181,110,42,.24) !important; }
+.threat-beacon { filter: drop-shadow(0 0 8px var(--foresight-amber)); }
+.simulation-content { background: var(--foresight-canvas) !important; color: var(--foresight-ink) !important; }
+.simulation-content section > div, .simulation-content section:not(.dashboard-assistant) > div { border-radius: var(--radius-structural) !important; background: var(--foresight-surface) !important; box-shadow: 0 8px 24px rgba(31,61,43,.08) !important; }
+.simulation-content .rounded-xl, .simulation-content .rounded-2xl, .simulation-content .rounded-lg { border-radius: var(--radius-structural) !important; }
+.simulation-content .rounded-full { border-radius: var(--radius-pill) !important; }
+.simulation-content .bg-moss-500, .simulation-content button.bg-moss-500 { background: var(--foresight-pine) !important; }
+.simulation-content .bg-threat, .simulation-content button.bg-threat { background: var(--foresight-amber) !important; color: var(--foresight-ink) !important; }
+.dashboard-content .leaflet-container { border-radius: var(--radius-structural) !important; }
+.map-view-toggle { border-radius: var(--radius-structural) !important; }
+/* Keep fixed navigation from covering the first dashboard block. */
+.app-topbar { top: 0 !important; z-index: 50 !important; height: 64px !important; }
+.dashboard-content { padding-top: 88px !important; }
+
+/* The assistant is an information rail, with alerts reserved for amber. */
+.dashboard-assistant { background: var(--foresight-surface) !important; color: var(--foresight-ink) !important; border-left-color: rgba(31,61,43,.18) !important; }
+.dashboard-assistant .assistant-header { padding: 14px 12px 16px; margin-top: 0 !important; border-bottom: 1px solid rgba(31,61,43,.14); }
+.dashboard-assistant .assistant-header > span { background: var(--foresight-pine) !important; color: #F5F7F3 !important; }
+.dashboard-assistant .assistant-message-ai { background: #F4F7F3 !important; border-color: rgba(31,61,43,.14) !important; }
+.dashboard-assistant .assistant-message-user { background: var(--foresight-pine-soft) !important; color: var(--foresight-ink) !important; border: 1px solid rgba(31,61,43,.12); }
+.dashboard-assistant .assistant-empty { background: var(--foresight-surface-muted) !important; border-color: rgba(31,61,43,.24) !important; }
+.dashboard-assistant .assistant-form { padding-top: 14px; border-top: 1px solid rgba(31,61,43,.14); }
+.dashboard-assistant .assistant-form input { background: #FFFFFF !important; border-color: rgba(31,61,43,.24) !important; }
+.dashboard-assistant .assistant-form button { background: var(--foresight-pine) !important; }
+.dashboard-assistant .assistant-toggle { top: 18px !important; right: 16px !important; z-index: 60 !important; }
+@media (max-width: 1279px) { .dashboard-content { padding-top: 84px !important; } }
+
+/* Assistant light-rail contrast: keep copy readable in empty and active states. */
+.dashboard-assistant .assistant-header h2,
+.dashboard-assistant .assistant-header p,
+.dashboard-assistant .assistant-empty p,
+.dashboard-assistant .assistant-message p {
+  color: var(--foresight-ink) !important;
+}
+.dashboard-assistant .assistant-header p,
+.dashboard-assistant .assistant-empty p:not(:first-child) {
+  color: var(--foresight-muted) !important;
+}
+.dashboard-assistant .assistant-empty p:first-child {
+  color: var(--foresight-ink) !important;
+}
+.dashboard-assistant .assistant-empty {
+  color: var(--foresight-ink) !important;
+}
+
+/* Beacon selection: use a complete instrument-card state instead of a left rail. */
+.beacon-sidebar-row {
+  position: relative;
+  min-height: 58px;
+  border: 1px solid transparent !important;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease !important;
+}
+.beacon-sidebar-row:hover {
+  transform: translateY(-1px);
+  background: #F4F7F3 !important;
+  border-color: rgba(31,61,43,.2) !important;
+}
+.beacon-sidebar-row:focus-visible {
+  outline: 2px solid var(--foresight-pine) !important;
+  outline-offset: 2px;
+}
+.beacon-sidebar-row-selected {
+  background: var(--foresight-pine-soft) !important;
+  border-color: rgba(31,61,43,.34) !important;
+  box-shadow: 0 6px 16px rgba(31,61,43,.12), inset 0 0 0 1px rgba(255,255,255,.55) !important;
+  transform: translateY(-1px);
+}
+.beacon-sidebar-row-selected > div p:first-child {
+  color: var(--foresight-pine) !important;
+}
+.beacon-sidebar-row-threat {
+  background: var(--foresight-amber-soft) !important;
+  border-color: rgba(181,110,42,.34) !important;
+  box-shadow: 0 6px 16px rgba(181,110,42,.12) !important;
+}
+.beacon-sidebar-row-threat.beacon-sidebar-row-selected {
+  box-shadow: 0 6px 16px rgba(181,110,42,.16), 0 0 0 2px var(--foresight-pine) !important;
+}
+.beacon-sidebar-row-ai {
+  background: #E7F0E8 !important;
+  border-color: rgba(31,61,43,.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(31,61,43,.06) !important;
+}
+.beacon-selected-meta {
+  flex: 0 0 auto;
+  border: 1px solid rgba(31,61,43,.28);
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,.72);
+  color: var(--foresight-pine);
+  padding: 3px 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .beacon-sidebar-row { transition: none !important; }
+  .beacon-sidebar-row:hover, .beacon-sidebar-row-selected { transform: none; }
+}
+
+.beacon-selected-telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 4px 8px;
+  padding-left: 12px;
+  color: var(--foresight-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.beacon-selected-telemetry span {
+  border: 1px solid rgba(31,61,43,.14);
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  padding: 3px 6px;
+}
+
+/* Selected beacon is one expandable card with a strong, unmistakable focus state. */
+.beacon-sidebar-card {
+  transition: background-color 180ms ease, padding 180ms ease;
+}
+.beacon-sidebar-card-expanded {
+  padding: 5px;
+  border: 1px solid rgba(31,61,43,.32);
+  border-radius: var(--radius-structural);
+  background: #DCE7DD;
+  box-shadow: 0 8px 20px rgba(31,61,43,.14);
+}
+.beacon-sidebar-card-expanded .beacon-sidebar-row {
+  min-height: 62px;
+  border-color: var(--foresight-pine) !important;
+  background: var(--foresight-pine) !important;
+  color: #F5F7F3 !important;
+  box-shadow: none !important;
+  transform: none;
+}
+.beacon-sidebar-card-expanded .beacon-sidebar-row > div p:first-child,
+.beacon-sidebar-card-expanded .beacon-sidebar-row > div p:nth-child(2),
+.beacon-sidebar-card-expanded .beacon-sidebar-row > span:not(.beacon-selected-meta) {
+  color: #F5F7F3 !important;
+}
+.beacon-sidebar-card-expanded .beacon-sidebar-row > span:first-child {
+  background: var(--foresight-amber) !important;
+  box-shadow: 0 0 0 4px rgba(215,154,59,.2);
+}
+.beacon-sidebar-card-expanded .beacon-selected-meta {
+  border-color: rgba(245,247,243,.5);
+  background: rgba(245,247,243,.12);
+  color: #F5F7F3;
+}
+.beacon-sidebar-card-expanded .beacon-selected-telemetry {
+  margin: 7px 5px 8px;
+  padding-left: 0;
+}
+.beacon-sidebar-card-expanded .beacon-selected-telemetry span {
+  border-color: rgba(31,61,43,.2);
+  background: rgba(255,255,255,.74);
+  color: var(--foresight-pine);
+}
+.beacon-sidebar-card-expanded .beacon-audio-player {
+  margin-top: 8px !important;
+  border-color: rgba(31,61,43,.18) !important;
+  box-shadow: none !important;
+}
+.beacon-sidebar-card-expanded .beacon-audio-player .text-slate-900 {
+  color: var(--foresight-ink) !important;
+}
+.beacon-sidebar-card-expanded .beacon-audio-player .text-slate-500 {
+  color: var(--foresight-muted) !important;
+}
+.beacon-sidebar-card-expanded .beacon-sidebar-row-threat {
+  background: var(--foresight-amber) !important;
+  border-color: var(--foresight-amber) !important;
+}
+.beacon-sidebar-card-expanded .beacon-sidebar-row-threat > span:first-child {
+  background: #7A451D !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .beacon-sidebar-card { transition: none; }
+}
+
+/* Operational motion: feedback appears once, then the dashboard settles. */
+@keyframes event-row-enter {
+  from { opacity: 0; transform: translateY(-8px); background-color: rgba(215,154,59,.18); }
+  to { opacity: 1; transform: translateY(0); background-color: transparent; }
+}
+@keyframes assistant-message-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.event-row-enter {
+  animation: event-row-enter 700ms cubic-bezier(.2,.8,.2,1) both;
+}
+.assistant-message:last-child {
+  animation: assistant-message-enter 280ms ease-out both;
+}
+.threat-zone-pulse {
+  animation-duration: 1.35s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-row-enter,
+  .assistant-message:last-child {
+    animation: none !important;
+  }
+}
+
+/* Calm arrival: the dashboard settles in behind the map journey. */
+@keyframes dashboard-intro-item {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dashboard-intro-item {
+  opacity: 0;
+  animation: dashboard-intro-item 560ms cubic-bezier(.2,.8,.2,1) both;
+}
+.dashboard-intro-item-1 { animation-delay: 80ms; }
+.dashboard-intro-item-2 { animation-delay: 180ms; }
+.dashboard-intro-item-3 { animation-delay: 280ms; }
+.dashboard-intro-item-4 { animation-delay: 380ms; }
+.dashboard-content button:not(:disabled),
+.dashboard-sidebar button:not(:disabled),
+.dashboard-assistant button:not(:disabled) {
+  transition: transform 160ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+.dashboard-content button:not(:disabled):active,
+.dashboard-sidebar button:not(:disabled):active,
+.dashboard-assistant button:not(:disabled):active {
+  transform: translateY(1px) scale(.985);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-intro-item {
+    opacity: 1;
+    animation: none !important;
+  }
+  .dashboard-content button:not(:disabled):active,
+  .dashboard-sidebar button:not(:disabled):active,
+  .dashboard-assistant button:not(:disabled):active {
+    transform: none;
+  }
+}
+/* Shared operational motion across the dashboard surfaces. */
+@keyframes dashboard-shell-arrive {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes dashboard-rail-arrive {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes dashboard-assistant-arrive {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.app-topbar {
+  animation: dashboard-shell-arrive 440ms ease-out 40ms both;
+}
+.dashboard-sidebar {
+  animation: dashboard-rail-arrive 520ms cubic-bezier(.2,.8,.2,1) both;
+}
+.dashboard-assistant {
+  animation: dashboard-assistant-arrive 520ms cubic-bezier(.2,.8,.2,1) 140ms both;
+}
+.assistant-empty,
+.assistant-form,
+.simulation-content > header,
+.simulation-content > section {
+  animation: dashboard-intro-item 520ms cubic-bezier(.2,.8,.2,1) both;
+}
+.simulation-content > header { animation-delay: 80ms; }
+.simulation-content > section:nth-of-type(1) { animation-delay: 180ms; }
+.simulation-content > section:nth-of-type(2) { animation-delay: 280ms; }
+.simulation-content > section:nth-of-type(3) { animation-delay: 380ms; }
+.dashboard-content button:not(:disabled):hover,
+.dashboard-assistant button:not(:disabled):hover,
+.simulation-content button:not(:disabled):hover {
+  box-shadow: 0 4px 12px rgba(31,61,43,.10);
+}
+.dashboard-content select:focus-visible,
+.dashboard-content input:focus-visible,
+.simulation-content select:focus-visible,
+.simulation-content input:focus-visible,
+.dashboard-assistant input:focus-visible {
+  outline: 2px solid var(--foresight-pine, #1F3D2B);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-topbar,
+  .dashboard-sidebar,
+  .dashboard-assistant,
+  .assistant-empty,
+  .assistant-form,
+  .simulation-content > header,
+  .simulation-content > section {
+    animation: none !important;
+  }
+}

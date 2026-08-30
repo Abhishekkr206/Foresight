@@ -4,6 +4,7 @@ import { getJson } from '../services/api';
 
 export default function useDashboardData() {
   const [beacons, setBeacons] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [allEvents, setAllEvents] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [summary, setSummary] = useState({ beacon_count: 0, active_beacon_count: 0, confirmed_events_today: 0, forest_health_score: 100, active_threat_count: 0 });
@@ -45,7 +46,8 @@ export default function useDashboardData() {
       setBeacons(beaconData); setAllEvents(eventData); setStatuses(statusData); setSummary(summaryData); setSimulator({ ...simulationData, _receivedAt: Date.now() });
       if (!aciBeacon && beaconData.length) setAciBeacon(beaconData[0].beacon_id);
       setError('');
-    } catch (requestError) { setError(requestError.message); }
+      setInitialLoading(false);
+    } catch (requestError) { setError(requestError.message); setInitialLoading(false); }
   };
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function useDashboardData() {
       const result = await getJson(path, options);
       setSimulator({ ...result, _receivedAt: Date.now() });
       setError('');
+
       return result;
     } catch (requestError) { setError(requestError.message); return null; }
     finally { setBusy(false); }
@@ -106,6 +109,7 @@ export default function useDashboardData() {
       setSimulator({ ...latest, _receivedAt: Date.now() });
       setSimulationNotice({ kind: 'success', text: items.length + ' scenario' + (items.length === 1 ? '' : 's') + ' accepted and running.' });
       setError('');
+
       window.setTimeout(refresh, 1200);
       return results;
     } catch (requestError) {
@@ -160,5 +164,5 @@ export default function useDashboardData() {
     const severity = threatActive ? 'threat' : latestEvent?.final_score >= 0.45 ? 'warning' : 'normal';
     return { ...beacon, active: statusById[beacon.beacon_id]?.active, battery_percentage: statusById[beacon.beacon_id]?.battery_percentage, severity, threat_active: threatActive };
   });
-  return { beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, sound, setSound, duration, setDuration, connected, busy, error, simulationNotice, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, refresh, start, stop, trigger, triggerMany, playReplay, activeThreats: summary.active_threat_count > 0 };
+  return { initialLoading, beacons, events, summary, simulator, selectedZone, setSelectedZone, selectedEvent, setSelectedEvent, correlation, setCorrelation, aciBeacon, setAciBeacon, aciData, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, sound, setSound, duration, setDuration, connected, busy, error, simulationNotice, rippleBeacon, playing, setPlaying, audioRef, sidebarBeacons, assistantPrompt, setAssistantPrompt, assistantMessages, assistantBusy, highlightedBeacons, highlightedEvents, setHighlightedBeacons, setHighlightedEvents, askAssistant, selectEvent, refresh, start, stop, trigger, triggerMany, playReplay, activeThreats: summary.active_threat_count > 0 };
 }

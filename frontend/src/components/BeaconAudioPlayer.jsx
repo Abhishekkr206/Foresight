@@ -1,4 +1,4 @@
-import { LoaderCircle, Pause, Play, Radio, Square } from 'lucide-react';
+import { CircleNotch, Pause, Play, Radio, Stop } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { API } from '../config/constants';
 import Waveform from './Waveform';
@@ -107,11 +107,11 @@ export default function BeaconAudioPlayer({ beaconId }) {
 
   return <div className="beacon-audio-player mt-4 rounded-2xl border border-moss-500/25 bg-white p-4 shadow-sm">
     <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0"><p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.14em] text-moss-500"><Radio size={12} /> LISTENING</p><p className="mt-1 truncate text-sm font-semibold text-slate-900">{beaconId}</p><p className="mt-1 text-[10px] text-slate-500">{statusLabel}</p></div>
-      {status === 'loading' && <LoaderCircle size={16} className="animate-spin text-moss-500" />}
+      <div className="min-w-0"><p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.14em] text-moss-500"><Radio weight="duotone" size={12} /> LISTENING</p><p className="mt-1 text-[10px] text-slate-500">{statusLabel}</p></div>
+      {status === 'loading' && <CircleNotch weight="duotone" size={16} className="animate-spin text-moss-500" />}
     </div>
     <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2"><Waveform playing={status === 'playing'} /><audio ref={audioRef} src={audioUrl || undefined} preload="auto" className="mt-2 h-8 w-full" onPlay={() => setStatus('playing')} onPause={() => { if (status === 'playing') setStatus('paused'); }} onEnded={() => setStatus('paused')} /></div>
-    <div className="mt-3 flex items-center gap-2"><button type="button" onClick={togglePlayback} disabled={!audioUrl} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-moss-400 disabled:cursor-not-allowed disabled:opacity-40">{status === 'playing' ? <Pause size={13} /> : <Play size={13} />}{status === 'playing' ? 'Pause' : 'Play capture'}</button><button type="button" onClick={stopPlayback} disabled={!audioUrl} aria-label="Stop listening" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"><Square size={13} /></button></div>
+    <div className="mt-3 flex items-center gap-2"><button type="button" onClick={togglePlayback} disabled={!audioUrl} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-moss-400 disabled:cursor-not-allowed disabled:opacity-40">{status === 'playing' ? <Pause weight="duotone" size={13} /> : <Play weight="duotone" size={13} />}{status === 'playing' ? 'Pause' : 'Play capture'}</button><button type="button" onClick={stopPlayback} disabled={!audioUrl} aria-label="Stop listening" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"><Stop weight="duotone" size={13} /></button></div>
     <p className="mt-2 text-[10px] text-slate-500">{receivedAt ? `Last capture ${new Date(receivedAt).toLocaleTimeString()}` : 'Audio appears after the next upload.'}</p>
   </div>;
 }

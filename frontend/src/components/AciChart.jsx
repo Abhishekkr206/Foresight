@@ -7,7 +7,7 @@ export default function AciChart({ data, beaconId }) {
     return <div className="aci-chart-card min-h-[430px] rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
       <div className="flex items-start justify-between gap-3">
         <div><p className="text-[10px] font-semibold tracking-[.16em] text-moss-500">ACI TREND</p><h2 className="mt-1 text-lg font-semibold text-slate-900">Acoustic complexity</h2></div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold text-slate-500">{beaconId || 'No beacon selected'}</span>
+        <span className="rounded-xl bg-slate-100 px-3 py-1 text-[10px] font-semibold text-slate-500">{beaconId || 'No beacon selected'}</span>
       </div>
       <div className="mt-4 flex min-h-[300px] items-center justify-center rounded-xl bg-slate-50/70 text-sm text-slate-500">No ACI history for this beacon yet.</div>
     </div>;

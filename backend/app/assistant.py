@@ -1,11 +1,14 @@
 from __future__ import annotations
 import json
+import logging
 from typing import Any
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from .config import Settings
 from .models import Event
 from .query import answer_local_query, get_aci_trend, get_beacon_status, get_forest_summary, query_events
+
+logger = logging.getLogger(__name__)
 
 class AssistantRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=500)
@@ -26,15 +29,16 @@ class AssistantResponse(BaseModel):
         return list(dict.fromkeys(value))[:20]
 
 TOOL_NAMES = {"query_events", "get_beacon_status", "get_aci_trend", "get_forest_summary"}
-SYSTEM_INSTRUCTION = """You are Foresight's forest acoustic monitoring assistant.
-Answer only from data returned by available read-only tools. Never invent data.
-For health or overall-monitoring questions, use get_forest_summary and explain the score in one or two concise sentences.
-Include only a small amount of context; do not list every beacon unless asked.
-Threat scores are decimals from 0 to 1. Do not provide SQL or change data.
-Return compact JSON with keys: answer, filters, highlight_beacon_ids,
+SYSTEM_INSTRUCTION = """You are Foresight's concise forest acoustic monitoring assistant.
+Answer in one short sentence whenever possible, never more than two short sentences.
+For Foresight monitoring questions, use only the available read-only tools and never invent data.
+For general knowledge, greetings, or casual questions, answer briefly from your general knowledge without calling a tool.
+For health or overall-monitoring questions, use get_forest_summary and mention a reason only when an active threat or unusually low ACI makes it necessary.
+Do not list every beacon unless explicitly asked. Do not provide SQL or change data.
+Always return valid compact JSON with keys: answer, filters, highlight_beacon_ids,
 highlight_event_ids, selected_beacon_id, selected_event_id, context.
 filters may contain only threat_score_min, threat_score_max, beacon_id, confirmed,
-start_time, and end_time. Include context only when it helps explain the answer."""
+start_time, and end_time. Leave filters, highlights, and context empty when they are not needed."""
 
 def _event_dict(event: Event) -> dict[str, Any]:
     return {"id": event.id, "beacon_id": event.beacon_id, "timestamp": event.timestamp.isoformat() if event.timestamp else None, "sound_class": event.sound_class, "threat_score": event.threat_score, "aci_value": event.aci_value, "final_score": event.final_score, "is_confirmed": event.is_confirmed}
@@ -64,23 +68,35 @@ def _safe_tool(name: str, args: dict[str, Any], db: Session, settings: Settings)
     return {"trend": [{**item, "timestamp": item["timestamp"].isoformat() if item.get("timestamp") else None} for item in get_aci_trend(db, args["beacon_id"], args.get("time_range", "24h"))]}
 
 def _fallback(prompt: str, db: Session, settings: Settings) -> AssistantResponse:
-    normalized = prompt.lower()
-    health_terms = ("forest health", "soundscape health", "how is the forest", "is everything okay", "overall status", "why is the health", "health score")
+    normalized = prompt.lower().strip()
+    if normalized in {'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'}:
+        return AssistantResponse(answer='Hi. Ask about health, beacons, ACI, or events.')
+
+    health_terms = ('health', 'how is the forest', 'how is the soundscape', 'overall status', 'is everything okay', 'anything bad', 'anything wrong', 'bad happening', 'what is happening', 'happening now', 'right now')
     if any(term in normalized for term in health_terms):
         summary = get_forest_summary(db, settings)
         health = summary['forest_health_score']
-        reasons = []
+        context: dict[str, Any] = {}
         if summary['active_threat_count']:
-            reasons.append(f"{summary['active_threat_count']} active threat{'s' if summary['active_threat_count'] != 1 else ''} are lowering it")
+            count = summary['active_threat_count']
+            answer = f"Forest health: {health}%. {count} active threat{'s' if count != 1 else ''}."
+            context = {'type': 'forest_summary', 'active_threat_count': count}
+        elif summary['aci_health_score'] < 80:
+            answer = f"Forest health: {health}%. ACI health: {summary['aci_health_score']}%."
+            context = {'type': 'forest_summary', 'aci_health_score': summary['aci_health_score']}
         else:
-            reasons.append('no active threats are currently lowering it')
-        reasons.append(f"ACI health is {summary['aci_health_score']}%")
-        answer = f"Forest health is currently {health}%. {'; '.join(reasons)}."
-        return AssistantResponse(answer=answer, context={'type': 'forest_summary', **summary})
-    result = answer_local_query(prompt, db, settings)
-    events = [_event_dict(event) for event in result.get("events", [])]
-    return AssistantResponse(answer=result["answer"], filters=result.get("filters", {}), highlight_beacon_ids=list(dict.fromkeys(e["beacon_id"] for e in events)), highlight_event_ids=[e["id"] for e in events])
+            answer = f"Forest health: {health}%."
+        return AssistantResponse(answer=answer, context=context)
 
+    event_terms = ('event', 'events', 'threat', 'threats', 'detection', 'detections', 'sound', 'below', 'under', 'above', 'over', 'confirmed')
+    beacon_terms = ('beacon', 'active', 'battery', 'online', 'offline', 'status')
+    aci_terms = ('aci', 'acoustic complexity', 'soundscape activity')
+    if not any(term in normalized for term in (*event_terms, *beacon_terms, *aci_terms)):
+        return AssistantResponse(answer='Ask about health, beacons, ACI, or events.')
+
+    result = answer_local_query(prompt, db, settings)
+    events = [_event_dict(event) for event in result.get('events', [])]
+    return AssistantResponse(answer=result['answer'], filters=result.get('filters', {}), highlight_beacon_ids=list(dict.fromkeys(e['beacon_id'] for e in events)), highlight_event_ids=[e['id'] for e in events])
 def _extract_json(text: str) -> dict[str, Any]:
     value = json.loads(text.strip())
     if not isinstance(value, dict):
@@ -121,4 +137,5 @@ def answer_query(prompt: str, db: Session, settings: Settings) -> AssistantRespo
             contents.append(types.Content(role="tool", parts=responses))
         raise RuntimeError("assistant tool-call limit reached")
     except Exception:
+        logger.exception("Gemini assistant request failed; using local fallback")
         return _fallback(prompt, db, settings)
