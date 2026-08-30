@@ -6,4 +6,6 @@ COPY backend/app /app/app
 COPY beacons_config.json /app/beacons_config.json
 COPY backend/audio /app/backend/audio
 ENV PYTHONPATH=/app
+ENV TFHUB_CACHE_DIR=/opt/tfhub_cache
+RUN python -c "import tensorflow_hub as hub; hub.load('https://tfhub.dev/google/yamnet/1')"
 CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
