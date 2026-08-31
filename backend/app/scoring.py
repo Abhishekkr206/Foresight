@@ -17,14 +17,18 @@ THREAT_WEIGHTS: dict[str, float] = {
 }
 
 
-def threat_score(confidence_by_class: dict[str, float]) -> tuple[str, float, float]:
+def threat_score(confidence_by_class: dict[str, float], min_threat_confidence: float = 0.0) -> tuple[str, float, float]:
     if not confidence_by_class:
         return "Silence", 0.0, 0.0
     label, confidence = max(confidence_by_class.items(), key=lambda pair: pair[1])
+    threshold = max(0.0, min(1.0, min_threat_confidence))
     score = max(
         max(0.0, min(1.0, value)) * THREAT_WEIGHTS.get(name, 0.0)
         for name, value in confidence_by_class.items()
-    )
+        if THREAT_WEIGHTS.get(name, 0.0) > 0 and value >= threshold
+    ) if any(THREAT_WEIGHTS.get(name, 0.0) > 0 and value >= threshold for name, value in confidence_by_class.items()) else 0.0
+    if THREAT_WEIGHTS.get(label, 0.0) > 0 and confidence < threshold:
+        label = "Noise"
     return label, max(0.0, min(1.0, confidence)), max(0.0, min(1.0, score))
 
 

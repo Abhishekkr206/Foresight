@@ -162,7 +162,7 @@ def latest_debug_audio(beacon_id: str = 'BEACON_01'):
     return Response(
         content=capture['data'],
         media_type=capture.get('content_type') or 'audio/wav',
-        headers={'Content-Disposition': f'inline; filename="{beacon_id}_latest.wav"'},
+        headers={'Content-Disposition': f'inline; filename="{beacon_id}_latest.wav"', 'Cache-Control': 'no-store, max-age=0'},
     )
 
 
@@ -272,7 +272,6 @@ def summary(db: Session = Depends(get_db)):
     statuses = db.scalars(select(BeaconStatus)).all()
     event_list = db.scalars(select(Event)).all()
     today_confirmed = [event for event in event_list if event.is_confirmed and as_utc(event.timestamp) >= today]
-    active_threats = [event for event in event_list if event.final_score >= settings.event_threshold and as_utc(event.timestamp) >= now - timedelta(seconds=settings.heartbeat_timeout_seconds)]
     active_count = sum(now - as_utc(status.last_seen) <= timedelta(seconds=settings.heartbeat_timeout_seconds) for status in statuses)
     health_window_start = now - timedelta(minutes=5)
     recent_events = [event for event in event_list if as_utc(event.timestamp) >= health_window_start]
@@ -281,6 +280,7 @@ def summary(db: Session = Depends(get_db)):
         current = latest_by_beacon.get(event.beacon_id)
         if current is None or as_utc(event.timestamp) > as_utc(current.timestamp):
             latest_by_beacon[event.beacon_id] = event
+    active_threats = [event for event in latest_by_beacon.values() if event.final_score >= settings.event_threshold and as_utc(event.timestamp) >= now - timedelta(seconds=settings.heartbeat_timeout_seconds)]
     live_average_aci = sum(event.aci_value for event in latest_by_beacon.values()) / len(latest_by_beacon) if latest_by_beacon else settings.aci_baseline
     aci_health = max(0.0, min(1.0, live_average_aci / settings.aci_baseline))
     active_threat_score = max((event.final_score for event in active_threats), default=0.0)

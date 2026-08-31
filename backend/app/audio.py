@@ -273,12 +273,10 @@ def classify(samples: np.ndarray, sample_rate: int = 16_000, fallback_label: str
         return {"Gunshot": min(0.99, max(0.7, peak)), "Explosion": 0.1}
     if rms < 0.01:
         return {"Silence": 0.95}
-    # Chainsaws and engines are sustained sources. The centroid separates a
-    # rough, broadband chainsaw-like signal from a lower-frequency engine tone.
+    # Sustained broadband audio is ambiguous without YAMNet. Do not guess
+    # Chainsaw or Engine here: ambient noise can have the same shape.
     if rms >= 0.02 and features['sustained_fraction'] >= 0.35:
-        if features['spectral_centroid'] >= 800:
-            return {"Chainsaw": min(0.95, max(0.6, rms + 0.55))}
-        return {"Engine": min(0.9, max(0.55, rms + 0.45))}
+        return {"Noise": min(0.95, max(0.2, rms + 0.45))}
     return {"Wind": min(0.95, max(0.1, 1.0 - rms)), "Bird vocalization": rms}
 
 

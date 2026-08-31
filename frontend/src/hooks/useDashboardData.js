@@ -17,7 +17,7 @@ export default function useDashboardData() {
   const [filterBeacon, setFilterBeacon] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
   const [confirmedOnly, setConfirmedOnly] = useState(false);
-  const [sound, setSound] = useState('chainsaw');
+  const [sound, setSound] = useState('ambient');
   const [duration, setDuration] = useState(30);
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);

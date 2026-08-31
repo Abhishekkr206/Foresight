@@ -43,7 +43,7 @@ class Pipeline:
                 "received_at": datetime.now(timezone.utc),
             }
         classes = classify(samples, fallback_label=classification_hint)
-        label, confidence, threat = threat_score(classes)
+        label, confidence, threat = threat_score(classes, self.settings.threat_confidence_threshold)
         aci = acoustic_complexity_index(samples)
         final, _ = fuse(threat, aci, self.settings.aci_baseline)
         event = Event(
@@ -61,6 +61,17 @@ class Pipeline:
         db.add(event)
         db.commit()
         db.refresh(event)
+        with self._latest_audio_lock:
+            capture = self._latest_audio.get(beacon.beacon_id)
+            if capture is not None:
+                capture.update({
+                    "event_id": event.id,
+                    "sound_class": event.sound_class,
+                    "confidence": event.confidence,
+                    "threat_score": event.threat_score,
+                    "aci_value": event.aci_value,
+                    "final_score": event.final_score,
+                })
         self._correlate(db, event)
         self.broadcaster({"type": "event.created", "data": event})
         return event

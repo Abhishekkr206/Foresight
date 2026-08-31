@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     heartbeat_timeout_seconds: int = Field(default=45, ge=5)
     correlation_window_seconds: int = Field(default=20, ge=1)
     event_threshold: float = Field(default=0.45, ge=0, le=1)
+    threat_confidence_threshold: float = Field(default=0.70, ge=0, le=1)
     save_threshold: float = Field(default=0.60, ge=0, le=1)
     aci_baseline: float = Field(default=1.0, gt=0)
     grid_size: int = Field(default=4, ge=1, le=20)

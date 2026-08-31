@@ -12,7 +12,7 @@ def test_sustained_loud_chainsaw_like_audio_is_not_gunshot(monkeypatch):
 
     result = audio.classify(samples, sample_rate)
 
-    assert max(result, key=result.get) in {'Chainsaw', 'Engine'}
+    assert max(result, key=result.get) == 'Noise'
     assert 'Gunshot' not in result
 
 
@@ -24,3 +24,11 @@ def test_short_impulse_can_be_gunshot(monkeypatch):
     result = audio.classify(samples)
 
     assert 'Gunshot' in result
+
+
+def test_explicit_simulation_chainsaw_remains_deterministic():
+    samples = np.zeros(16_000, dtype=np.float32)
+
+    result = audio.classify(samples, fallback_label='chainsaw')
+
+    assert result == {'Chainsaw': 0.92}
