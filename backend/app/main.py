@@ -177,6 +177,15 @@ def latest_debug_audio_meta(beacon_id: str = 'BEACON_01'):
         'content_type': capture.get('content_type') or 'audio/wav',
         'received_at': capture['received_at'],
         'duration_seconds': round(len(capture['samples']) / 16000, 3),
+        'event_id': capture.get('event_id'),
+        'sound_class': capture.get('sound_class'),
+        'confidence': capture.get('confidence'),
+        'threat_score': capture.get('threat_score'),
+        'aci_value': capture.get('aci_value'),
+        'final_score': capture.get('final_score'),
+        'classifier': capture.get('classifier'),
+        'classifier_backend': capture.get('classifier_backend'),
+        'yamnet_loaded': capture.get('yamnet_loaded', False),
     }
 
 @app.get('/api/debug/audio/latest/waveform')

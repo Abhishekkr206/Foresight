@@ -34,7 +34,7 @@ function SelectedEvent({ selectedEvent, correlation, setSelectedEvent, setCorrel
   return <div className="event-activity-panel min-h-[430px] rounded-2xl border border-slate-200 bg-white p-5 shadow-xl transition-[min-height] duration-300"><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Selected event</h2>{selectedEvent && <button onClick={() => { setSelectedEvent(null); setCorrelation({ events: [], beacons: [] }); }} className="text-xs text-slate-600 hover:text-slate-900">Clear</button>}</div>
     {!selectedEvent ? <p className="text-sm text-slate-500">Select an event to inspect its location, scores, and recording.</p> : <div><div className="grid grid-cols-2 gap-3 text-sm"><p><span className="block text-xs text-slate-500">Sound</span><strong>{selectedEvent.event.sound_class}</strong></p><p><span className="block text-xs text-slate-500">Beacon</span><strong>{selectedEvent.event.beacon_id}</strong></p><p><span className="block text-xs text-slate-500">Threat</span><strong className="text-warning">{Math.round(selectedEvent.event.threat_score * 100)}%</strong></p><p><span className="block text-xs text-slate-500">Fusion score</span><strong className="text-threat">{Math.round(selectedEvent.event.final_score * 100)}%</strong></p><p><span className="block text-xs text-slate-500">ACI</span><strong>{selectedEvent.event.aci_value.toFixed(3)}</strong></p><p><span className="block text-xs text-slate-500">Time</span><strong>{new Date(selectedEvent.event.timestamp).toLocaleString()}</strong></p></div>
       {selectedEvent.event.is_confirmed && <p className="mt-4 rounded-lg border border-moss-500/40 bg-moss-500/10 p-3 text-xs text-slate-600">Confirmed by multiple beacons / nearest guess: {correlation.correlation?.estimated_proximity_beacon_id || 'unknown'}</p>}
-      {selectedEvent.event.audio_file_url ? <div className="mt-4"><Waveform playing={playing} /><audio ref={audioRef} controls className="mt-2 h-8 w-full" src={selectedEvent.event.audio_file_url.startsWith('http') ? selectedEvent.event.audio_file_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${selectedEvent.event.audio_file_url}`} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /><button onClick={playReplay} className="mt-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white">Replay recording</button></div> : <p className="mt-4 rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Audio was not saved for this event.</p>}
+      {selectedEvent.event.audio_file_url ? <div className="mt-4"><Waveform playing={playing} /><audio ref={audioRef} controls className="mt-2 h-8 w-full" src={selectedEvent.event.audio_file_url.startsWith('http') ? selectedEvent.event.audio_file_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${selectedEvent.event.audio_file_url}`} onPlay={() => { window.dispatchEvent(new Event('foresight:pause-live-audio')); setPlaying(true); }} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /><button onClick={playReplay} className="mt-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white">Replay recording</button></div> : <p className="mt-4 rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Audio was not saved for this event.</p>}
     </div>}
   </div>;
 }
@@ -65,6 +65,14 @@ useEffect(() => {
     const timer = window.setTimeout(() => setRevealReady(true), remaining);
     return () => window.clearTimeout(timer);
   }, [initialLoading, bootStartedAt]);
+  useEffect(() => {
+    const pauseReplay = () => {
+      audioRef.current?.pause();
+      setPlaying(false);
+    };
+    window.addEventListener('foresight:pause-event-audio', pauseReplay);
+    return () => window.removeEventListener('foresight:pause-event-audio', pauseReplay);
+  }, []);
   if (initialLoading || !revealReady) return <DashboardLoadingSkeleton />;
   const toggleBeacon = (beaconId) => setSelectedBeaconId((currentId) => currentId === beaconId ? null : beaconId);
   const zoneFor = (beacon) => { const latStep = (BOUNDS.max_lat - BOUNDS.min_lat) / 4; const lonStep = (BOUNDS.max_lon - BOUNDS.min_lon) / 4; const row = Math.min(3, Math.max(0, Math.floor((beacon.latitude - BOUNDS.min_lat) / latStep))); const col = Math.min(3, Math.max(0, Math.floor((beacon.longitude - BOUNDS.min_lon) / lonStep))); return `zone_${row}_${col}`; };

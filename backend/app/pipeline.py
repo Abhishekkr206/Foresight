@@ -5,7 +5,7 @@ from threading import Lock
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .audio import acoustic_complexity_index, classify, decode_audio
+from .audio import acoustic_complexity_index, classifier_status, classify, decode_audio
 from .config import Settings
 from .models import Beacon, Correlation, Event
 from .scoring import fuse, threat_score
@@ -43,6 +43,7 @@ class Pipeline:
                 "received_at": datetime.now(timezone.utc),
             }
         classes = classify(samples, fallback_label=classification_hint)
+        classifier = classifier_status()
         label, confidence, threat = threat_score(classes, self.settings.threat_confidence_threshold)
         aci = acoustic_complexity_index(samples)
         final, _ = fuse(threat, aci, self.settings.aci_baseline)
@@ -71,6 +72,9 @@ class Pipeline:
                     "threat_score": event.threat_score,
                     "aci_value": event.aci_value,
                     "final_score": event.final_score,
+                    "classifier": classifier.get("classifier"),
+                    "classifier_backend": classifier.get("backend", classifier.get("classifier")),
+                    "yamnet_loaded": classifier.get("yamnet_loaded", False),
                 })
         self._correlate(db, event)
         self.broadcaster({"type": "event.created", "data": event})

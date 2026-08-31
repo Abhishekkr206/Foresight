@@ -9,12 +9,25 @@ export default function BeaconAudioPlayer({ beaconId }) {
   const latestReceivedRef = useRef(null);
   const requestRef = useRef(0);
   const listeningRef = useRef(true);
+  const inFlightRef = useRef(false);
   const [audioUrl, setAudioUrl] = useState('');
   const [status, setStatus] = useState('loading');
   const [receivedAt, setReceivedAt] = useState(null);
   const [captureMeta, setCaptureMeta] = useState(null);
   const [listening, setListening] = useState(true);
   const [error, setError] = useState('');
+  useEffect(() => {
+    const pauseLive = () => {
+      listeningRef.current = false;
+      setListening(false);
+      audioRef.current?.pause();
+      setStatus('paused');
+    };
+    window.addEventListener('foresight:pause-live-audio', pauseLive);
+    return () => window.removeEventListener('foresight:pause-live-audio', pauseLive);
+  }, []);
+
+
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +50,8 @@ export default function BeaconAudioPlayer({ beaconId }) {
 
     const loadLatest = async (shouldPlay = false) => {
       if (!beaconId || cancelled || (!shouldPlay && !listeningRef.current)) return;
+      if (inFlightRef.current) return
+      inFlightRef.current = true;
       try {
         const metaResponse = await fetch(`${API}/api/debug/audio/latest/meta?beacon_id=${encodeURIComponent(beaconId)}`, { cache: 'no-store' });
         if (metaResponse.status === 404) {
@@ -46,7 +61,7 @@ export default function BeaconAudioPlayer({ beaconId }) {
         if (!metaResponse.ok) throw new Error('Audio status unavailable');
         const meta = await metaResponse.json();
         if (cancelled || requestId !== requestRef.current || meta.received_at === latestReceivedRef.current) return;
-        const audioResponse = await fetch(`${API}/api/debug/audio/latest?beacon_id=${encodeURIComponent(beaconId)}&received_at=${encodeURIComponent(meta.received_at)}`);
+        const audioResponse = await fetch(`${API}/api/debug/audio/latest?beacon_id=${encodeURIComponent(beaconId)}&received_at=${encodeURIComponent(meta.received_at)}`, { cache: 'no-store' });
         if (!audioResponse.ok) throw new Error('Audio capture unavailable');
         const blob = await audioResponse.blob();
         if (cancelled || requestId !== requestRef.current) return;
@@ -62,6 +77,7 @@ export default function BeaconAudioPlayer({ beaconId }) {
         window.setTimeout(() => {
           if (!shouldPlay && !listeningRef.current) return;
           if (!audioRef.current || requestId !== requestRef.current) return;
+          window.dispatchEvent(new Event('foresight:pause-event-audio'));
           audioRef.current.src = nextUrl;
           audioRef.current.load();
           audioRef.current.play().then(() => setStatus('playing')).catch(() => setStatus('paused'));
@@ -71,6 +87,8 @@ export default function BeaconAudioPlayer({ beaconId }) {
           setStatus('error');
           setError(requestError.message);
         }
+      } finally {
+        inFlightRef.current = false;
       }
     };
 
@@ -85,6 +103,7 @@ export default function BeaconAudioPlayer({ beaconId }) {
   const togglePlayback = () => {
     if (!audioRef.current || !audioUrl) return;
     if (audioRef.current.paused) {
+      window.dispatchEvent(new Event('foresight:pause-event-audio'));
       setListening(true);
       listeningRef.current = true;
       audioRef.current.play().then(() => setStatus('playing')).catch(() => setStatus('paused'));
@@ -116,5 +135,6 @@ export default function BeaconAudioPlayer({ beaconId }) {
     <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2"><Waveform playing={status === 'playing'} /><audio ref={audioRef} src={audioUrl || undefined} preload="auto" className="mt-2 h-8 w-full" onPlay={() => setStatus('playing')} onPause={() => { if (status === 'playing') setStatus('paused'); }} onEnded={() => setStatus('paused')} /></div>
     <div className="mt-3 flex items-center gap-2"><button type="button" onClick={togglePlayback} disabled={!audioUrl} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-moss-400 disabled:cursor-not-allowed disabled:opacity-40">{status === 'playing' ? <Pause weight="duotone" size={13} /> : <Play weight="duotone" size={13} />}{status === 'playing' ? 'Pause' : 'Play capture'}</button><button type="button" onClick={stopPlayback} disabled={!audioUrl} aria-label="Stop listening" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"><Stop weight="duotone" size={13} /></button></div>
     <p className="mt-2 text-[10px] text-slate-500">{receivedAt ? `Last capture ${new Date(receivedAt).toLocaleTimeString()} · ${captureMeta?.sound_class || 'Unclassified'}` : 'Audio appears after the next upload.'}</p>
+    <p className="mt-1 text-[10px] text-slate-500">Classifier: {captureMeta?.classifier_backend || 'unknown'} · YAMNet: {captureMeta?.yamnet_loaded ? 'loaded' : 'fallback'}</p>
   </div>;
 }
