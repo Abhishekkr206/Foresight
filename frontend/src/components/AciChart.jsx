@@ -12,6 +12,7 @@ export default function AciChart({ data, beaconId }) {
       <div className="mt-4 flex min-h-[300px] items-center justify-center rounded-xl bg-slate-50/70 text-sm text-slate-500">No ACI history for this beacon yet.</div>
     </div>;
   }
+  
 
   const values = data.map((item) => Number(item.aci_value) || 0);
   const min = Math.min(...values);
