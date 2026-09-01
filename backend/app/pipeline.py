@@ -32,7 +32,16 @@ class Pipeline:
                 "samples": capture["samples"].copy(),
             }
 
-    def process(self, db: Session, beacon: Beacon, data: bytes, filename: str, content_type: str, classification_hint: str | None = None) -> Event:
+    def process(
+        self,
+        db: Session,
+        beacon: Beacon,
+        data: bytes,
+        filename: str,
+        content_type: str,
+        classification_hint: str | None = None,
+        zone: str | None = None,
+    ) -> Event:
         samples = decode_audio(data)
         with self._latest_audio_lock:
             self._latest_audio[beacon.beacon_id] = {
@@ -77,7 +86,7 @@ class Pipeline:
                     "yamnet_loaded": classifier.get("yamnet_loaded", False),
                 })
         self._correlate(db, event)
-        self.broadcaster({"type": "event.created", "data": event})
+        self.broadcaster({"type": "event.created", "data": event, "zone": zone})
         return event
 
     def _correlate(self, db: Session, event: Event) -> None:

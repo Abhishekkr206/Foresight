@@ -78,11 +78,13 @@ class Simulator:
     def status(self) -> dict:
         now = datetime.now(timezone.utc).timestamp()
         beacon_counts = {}
+        beacon_ids = {}
         db = self.db_factory()
         try:
             for beacon in db.scalars(select(Beacon).where(Beacon.is_real_hardware.is_(False))).all():
                 zone = self.zone_for(beacon.latitude, beacon.longitude)
                 beacon_counts[zone] = beacon_counts.get(zone, 0) + 1
+                beacon_ids.setdefault(zone, []).append(beacon.beacon_id)
         finally:
             db.close()
         zones = {}
@@ -97,6 +99,7 @@ class Simulator:
                     "sound": sound,
                     "threat": sound in THREAT_SOUNDS,
                     "beacon_count": beacon_counts.get(zone, 0),
+                    "beacon_ids": sorted(beacon_ids.get(zone, [])),
                     "remaining_seconds": max(0, round(until - now, 1)) if until else 0,
                 }
         return {
@@ -149,7 +152,15 @@ class Simulator:
                         else:
                             data, filename = make_demo_wav(sound), f"{zone}_{sound}.wav"
 
-                        event = self.pipeline.process(db, beacon, data, filename, "audio/wav", classification_hint=None if sound == "ambient" else sound)
+                        event = self.pipeline.process(
+                            db,
+                            beacon,
+                            data,
+                            filename,
+                            "audio/wav",
+                            classification_hint=None if sound == "ambient" else sound,
+                            zone=zone,
+                        )
                         self.last_event_at = event.timestamp
                         battery = self.batteries.get(beacon.beacon_id, random.uniform(72, 96))
                         battery = max(5.0, battery - 0.02)

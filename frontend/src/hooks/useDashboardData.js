@@ -60,10 +60,11 @@ export default function useDashboardData() {
         const payload = JSON.parse(message.data);
         if (payload.type === 'event.created') {
           const id = payload.data.beacon_id;
+          const location = payload.zone ? payload.zone + ' / ' + id : id;
           setRippleBeacon(id);
           setTimeout(() => setRippleBeacon(null), 1800);
           setSimulationNotice((current) => current?.kind === 'pending'
-            ? { kind: 'success', text: `Audio processed — event detected at ${id}.` }
+            ? { kind: 'success', text: `Audio processed — event detected at ${location}.` }
             : current);
         }
       } catch {}
