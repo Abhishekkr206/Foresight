@@ -15,6 +15,8 @@ MODEL_DIR = Path(__file__).resolve().parents[2] / 'backend' / 'models'
 LITE_MODEL_PATH = MODEL_DIR / 'yamnet.tflite'
 LITE_LABELS_PATH = MODEL_DIR / 'yamnet_labels.csv'
 CLASSIFIER_BACKEND = os.getenv('CLASSIFIER_BACKEND', 'full').lower()
+LITE_YAMNET_ERROR: str | None = None
+LITE_LABELS_ERROR: str | None = None
 
 
 def decode_audio(data: bytes, sample_rate: int = 16_000) -> np.ndarray:
@@ -80,21 +82,31 @@ def _yamnet():
 
 @lru_cache(maxsize=1)
 def _lite_yamnet():
+    global LITE_YAMNET_ERROR
     try:
         from ai_edge_litert.interpreter import Interpreter
 
         interpreter = Interpreter(model_path=str(LITE_MODEL_PATH))
         interpreter.allocate_tensors()
+        LITE_YAMNET_ERROR = None
         return interpreter
     except Exception as exc:
+        LITE_YAMNET_ERROR = str(exc)
         logger.warning("LiteRT YAMNet unavailable; using fallback classifier: %s", exc)
         return None
 
 
 @lru_cache(maxsize=1)
 def _lite_yamnet_labels() -> list[str]:
-    with LITE_LABELS_PATH.open(newline='', encoding='utf-8') as source:
-        return [row['display_name'] for row in csv.DictReader(source)]
+    global LITE_LABELS_ERROR
+    try:
+        with LITE_LABELS_PATH.open(newline='', encoding='utf-8') as source:
+            labels = [row['display_name'] for row in csv.DictReader(source)]
+        LITE_LABELS_ERROR = None
+        return labels
+    except Exception as exc:
+        LITE_LABELS_ERROR = str(exc)
+        raise
 
 
 def _canonical_label(label: str) -> str:
@@ -144,27 +156,39 @@ def _yamnet_labels(model) -> list[str]:
 
 
 def classifier_status() -> dict[str, object]:
-    """Return the active classifier without running audio inference."""
+    """Return the active classifier and enough detail to diagnose deployment failures."""
+    status: dict[str, object] = {
+        'requested_backend': CLASSIFIER_BACKEND,
+        'model_path': str(LITE_MODEL_PATH),
+        'model_file_exists': LITE_MODEL_PATH.is_file(),
+        'labels_path': str(LITE_LABELS_PATH),
+        'labels_file_exists': LITE_LABELS_PATH.is_file(),
+    }
     if CLASSIFIER_BACKEND == 'lite':
         interpreter = _lite_yamnet()
         if interpreter is None:
-            return {'classifier': 'fallback', 'yamnet_loaded': False}
+            return {
+                **status,
+                'classifier': 'fallback',
+                'backend': 'lite',
+                'yamnet_loaded': False,
+                'error': LITE_YAMNET_ERROR or 'LiteRT model could not be loaded',
+            }
         try:
             labels = _lite_yamnet_labels()
-            return {'classifier': 'yamnet', 'backend': 'lite', 'yamnet_loaded': True, 'label_count': len(labels)}
+            return {**status, 'classifier': 'yamnet', 'backend': 'lite', 'yamnet_loaded': True, 'label_count': len(labels)}
         except Exception as exc:
             logger.warning('LiteRT YAMNet loaded but labels are unavailable: %s', exc)
-            return {'classifier': 'fallback', 'yamnet_loaded': False, 'error': str(exc)}
+            return {**status, 'classifier': 'fallback', 'backend': 'lite', 'yamnet_loaded': False, 'error': LITE_LABELS_ERROR or str(exc)}
     model = _yamnet()
     if model is None:
-        return {'classifier': 'fallback', 'yamnet_loaded': False}
+        return {**status, 'classifier': 'fallback', 'backend': 'full', 'yamnet_loaded': False, 'error': 'TensorFlow Hub YAMNet could not be loaded'}
     try:
         labels = _yamnet_labels(model)
-        return {'classifier': 'yamnet', 'yamnet_loaded': True, 'label_count': len(labels)}
+        return {**status, 'classifier': 'yamnet', 'backend': 'full', 'yamnet_loaded': True, 'label_count': len(labels)}
     except Exception as exc:
         logger.warning('YAMNet loaded but labels are unavailable: %s', exc)
-        return {'classifier': 'fallback', 'yamnet_loaded': False, 'error': str(exc)}
-
+        return {**status, 'classifier': 'fallback', 'backend': 'full', 'yamnet_loaded': False, 'error': str(exc)}
 
 def _fallback_features(samples: np.ndarray, sample_rate: int) -> dict[str, float]:
     """Calculate inexpensive temporal features for the offline classifier."""
