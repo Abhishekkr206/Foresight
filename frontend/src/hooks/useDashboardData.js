@@ -9,7 +9,7 @@ export default function useDashboardData() {
   const [statuses, setStatuses] = useState([]);
   const [summary, setSummary] = useState({ beacon_count: 0, active_beacon_count: 0, confirmed_events_today: 0, forest_health_score: 100, active_threat_count: 0 });
   const [simulator, setSimulator] = useState({ running: false, worker_healthy: false, zones: {} });
-  const [selectedZone, setSelectedZone] = useState('zone_1_1');
+  const [selectedZone, setSelectedZone] = useState('zone_0_0');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [correlation, setCorrelation] = useState({ events: [], beacons: [] });
   const [aciBeacon, setAciBeacon] = useState('');
@@ -17,8 +17,8 @@ export default function useDashboardData() {
   const [filterBeacon, setFilterBeacon] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
   const [confirmedOnly, setConfirmedOnly] = useState(false);
-  const [sound, setSound] = useState('ambient');
-  const [duration, setDuration] = useState(30);
+  const [sound, setSound] = useState('chainsaw');
+  const [duration, setDuration] = useState(60);
   const [connected, setConnected] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
