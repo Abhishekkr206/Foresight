@@ -11,7 +11,15 @@ import numpy as np
 
 
 logger = logging.getLogger(__name__)
-MODEL_DIR = Path(__file__).resolve().parents[2] / 'backend' / 'models'
+_MODEL_DIR_CANDIDATES = (
+    Path(__file__).resolve().parents[2] / 'backend' / 'models',
+    Path(__file__).resolve().parents[1] / 'models',
+    Path('/app/backend/models'),
+)
+MODEL_DIR = next(
+    (path for path in _MODEL_DIR_CANDIDATES if (path / 'yamnet.tflite').is_file() and (path / 'yamnet_labels.csv').is_file()),
+    _MODEL_DIR_CANDIDATES[0],
+)
 LITE_MODEL_PATH = MODEL_DIR / 'yamnet.tflite'
 LITE_LABELS_PATH = MODEL_DIR / 'yamnet_labels.csv'
 CLASSIFIER_BACKEND = os.getenv('CLASSIFIER_BACKEND', 'full').lower()
