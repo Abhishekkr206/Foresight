@@ -143,6 +143,24 @@ Available threat sounds are chainsaw, gunshot, vehicle, engine, and chopping. Te
 
 Use GET /api/simulation/status to inspect worker health, active zone scenarios, and beacon assignments. A healthy classifier should report 521 YAMNet labels.
 
+Triggers wake the worker immediately and return an `accepted_scenario` containing
+the scenario ID and affected beacon IDs. Zones report `queued`, `processing`, or
+`detected` phases, with UTC start/expiry times. The selected duration starts when
+processing begins; selecting `ambient` resets the zone. Empty zones and stopped
+workers reject triggers with a clear error.
+
+Triggering preserves your listening selection. Use **Listen to BEACON_ID** to
+switch sources explicitly. Live playback continues across Dashboard and
+Simulation until paused, and repeated captures of one simulation scenario do not
+restart its recording. Playing an event replay pauses live listening.
+
+WebSocket `audio.ready` messages announce versioned captures before classification
+or cloud uploads finish. The latest-audio endpoint accepts an optional
+`capture_id`; HTTP 409 means the requested capture was replaced and metadata
+should be fetched again. Three-second polling recovers missed updates. Qualifying
+event recordings are saved locally first; a bounded background queue uploads to
+Supabase and emits `event.updated` when the hosted URL is ready.
+
 ## Hardware integration
 
 The ESP32 integration is represented by backend ingestion endpoints and is intended for local-network testing. The physical beacon is not required to run the dashboard.
@@ -166,6 +184,59 @@ Beacon locations are configured in [beacons_config.json](beacons_config.json). T
 - POST /api/simulation/trigger — trigger a sound in a zone
 - WS /ws — receive live event and status updates
 
+## Forest health and coverage
+
+The headline is a prototype acoustic-health indicator averaged equally across
+zones with audio from the last five minutes. Each zone averages its reporting
+beacons' normalized ACI values, then subtracts up to 35 percentage points for its
+strongest qualifying threat from the last 45 seconds. Multiple beacons in one
+zone do not multiply that zone's weight or threat penalty.
+
+For example, with eight zones at 100%, a 35-point local threat penalty changes
+one zone to 65% and the overall score to 95.6%. Changes in local acoustic activity
+can also affect the result; normal audio is not forced to a score of 100%.
+
+`GET /api/summary` reports zone scores, reporting/configured beacon counts, and
+observed/populated/affected zone counts. `active_threat_penalty` is the actual
+percentage-point reduction in the overall score, while `active_threat_count`
+continues to count qualifying beacons. Current ACI averages give each observed
+zone equal weight; the historical ACI average remains an event-history metric.
+
+Empty and unobserved zones are not scored as healthy. When no recent audio is
+available, `forest_health_score`, `aci_health_score`, `average_aci`, and
+`live_average_aci` are `null`; clients should display a waiting state. Coverage
+must be shown alongside the score. The dashboard and assistant use the same
+backend calculation. No database migration is required.
+
+## Forest Insight assistant
+
+The configured model is `gemini-3.1-flash-lite` (`GEMINI_MODEL`). Enable it with
+`ASSISTANT_ENABLED=true` and a valid `GEMINI_API_KEY` in the backend environment,
+then restart the backend. An invalid key cannot be repaired in application code;
+replace it in the environment settings, not in chat or frontend code.
+
+`GET /api/assistant/status` reports the configured model and last known connection
+state without contacting Google. Chat responses include `used_llm`, `mode`,
+`model`, and a safe `fallback_reason`. An authentication failure is cached for
+60 seconds. The chat header shows the actual response mode once, with model and
+connection details available on hover.
+
+`POST /api/assistant/query` accepts the existing `prompt` plus optional `history`
+(`user`/`assistant` turns with `text`, at most 12 turns and 12,000 characters) and
+`selection` (`zone_id`/`beacon_id`). Questions remain limited to 500 characters.
+The backend supplies fresh monitoring context, so previous chat messages are
+never treated as current sensor evidence. Monitoring tools are read-only.
+
+When Gemini is unavailable, local-data mode understands common domain typos,
+current zone threats, follow-up questions, beacon status, ACI, and historical
+events. It distinguishes missing observations from no detected threats. It is a
+data assistant, not a replacement general-purpose language model. The 20-second
+Gemini deadline is configurable with `GEMINI_TIMEOUT_SECONDS`.
+
+The browser retains conversation history across page switches. New Chat clears
+that history and cancels a pending reply. Enter sends, Shift+Enter adds a line,
+and chat history is not stored in a new database table.
+
 ## Testing and production build
 
 Run backend tests from the backend directory:
@@ -178,6 +249,16 @@ Build the frontend:
 
     cd frontend
     npm run build
+
+Run frontend data and navigation tests from `frontend/`:
+
+    npm test
+    npm run test:e2e
+
+Browser tests use installed Google Chrome and the backend at `http://localhost:8000`.
+The browser command builds the production frontend and starts Vite Preview on port 4173
+when needed, so timings exclude development and HMR overhead. Browser tests exercise simulation
+stop/start controls; run them against a local demonstration backend.
 
 ## Deployment
 

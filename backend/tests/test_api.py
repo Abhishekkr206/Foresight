@@ -1,8 +1,11 @@
 import os
+import pytest
+import tempfile
 import json
 from pathlib import Path
 
-os.environ["DATABASE_URL"] = "sqlite:///./test_foresight.db"
+_test_directory = tempfile.TemporaryDirectory(prefix="foresight-tests-")
+os.environ["DATABASE_URL"] = "sqlite:///" + (Path(_test_directory.name) / "test.db").as_posix()
 os.environ["ENABLE_SIMULATION"] = "false"
 
 from fastapi.testclient import TestClient
@@ -10,6 +13,21 @@ from fastapi.testclient import TestClient
 from app.audio import make_demo_wav
 from app import audio
 from app.main import app
+from app import main
+
+
+@pytest.fixture(scope='session', autouse=True)
+def close_test_database():
+    yield
+    main.engine.dispose()
+    _test_directory.cleanup()
+
+
+@pytest.fixture(autouse=True)
+def offline_classifier(monkeypatch, tmp_path):
+    monkeypatch.setattr(audio, '_yamnet', lambda: None)
+    monkeypatch.setattr(main.storage, 'supabase', None)
+    monkeypatch.setattr(main.storage.settings, 'uploads_dir', tmp_path)
 
 
 EXPECTED_BEACON_COUNT = len(json.loads((Path(__file__).parents[2] / "beacons_config.json").read_text(encoding="utf-8")))

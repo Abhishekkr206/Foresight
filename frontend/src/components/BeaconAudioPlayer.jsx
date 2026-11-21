@@ -1,140 +1,26 @@
 import { CircleNotch, Pause, Play, Radio, Stop } from '@phosphor-icons/react';
-import { useEffect, useRef, useState } from 'react';
-import { API } from '../config/constants';
+import { useLiveAudio } from '../hooks/useLiveAudio';
 import Waveform from './Waveform';
 
-export default function BeaconAudioPlayer({ beaconId }) {
-  const audioRef = useRef(null);
-  const objectUrlRef = useRef(null);
-  const latestReceivedRef = useRef(null);
-  const requestRef = useRef(0);
-  const listeningRef = useRef(true);
-  const inFlightRef = useRef(false);
-  const [audioUrl, setAudioUrl] = useState('');
-  const [status, setStatus] = useState('loading');
-  const [receivedAt, setReceivedAt] = useState(null);
-  const [captureMeta, setCaptureMeta] = useState(null);
-  const [listening, setListening] = useState(true);
-  const [error, setError] = useState('');
-  useEffect(() => {
-    const pauseLive = () => {
-      listeningRef.current = false;
-      setListening(false);
-      audioRef.current?.pause();
-      setStatus('paused');
-    };
-    window.addEventListener('foresight:pause-live-audio', pauseLive);
-    return () => window.removeEventListener('foresight:pause-live-audio', pauseLive);
-  }, []);
-
-
-
-  useEffect(() => {
-    let cancelled = false;
-    const requestId = ++requestRef.current;
-    latestReceivedRef.current = null;
-    setAudioUrl('');
-    setReceivedAt(null);
-    setCaptureMeta(null);
-    setError('');
-    setStatus('loading');
-    setListening(true);
-    listeningRef.current = true;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.removeAttribute('src');
-      audioRef.current.load();
-    }
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    objectUrlRef.current = null;
-
-    const loadLatest = async (shouldPlay = false) => {
-      if (!beaconId || cancelled || (!shouldPlay && !listeningRef.current)) return;
-      if (inFlightRef.current) return
-      inFlightRef.current = true;
-      try {
-        const metaResponse = await fetch(`${API}/api/debug/audio/latest/meta?beacon_id=${encodeURIComponent(beaconId)}`, { cache: 'no-store' });
-        if (metaResponse.status === 404) {
-          if (!cancelled) setStatus('waiting');
-          return;
-        }
-        if (!metaResponse.ok) throw new Error('Audio status unavailable');
-        const meta = await metaResponse.json();
-        if (cancelled || requestId !== requestRef.current || meta.received_at === latestReceivedRef.current) return;
-        const audioResponse = await fetch(`${API}/api/debug/audio/latest?beacon_id=${encodeURIComponent(beaconId)}&received_at=${encodeURIComponent(meta.received_at)}`, { cache: 'no-store' });
-        if (!audioResponse.ok) throw new Error('Audio capture unavailable');
-        const blob = await audioResponse.blob();
-        if (cancelled || requestId !== requestRef.current) return;
-        const nextUrl = URL.createObjectURL(blob);
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = nextUrl;
-        latestReceivedRef.current = meta.received_at;
-        setAudioUrl(nextUrl);
-        setReceivedAt(meta.received_at);
-        setCaptureMeta(meta);
-        setStatus('paused');
-        setError('');
-        window.setTimeout(() => {
-          if (!shouldPlay && !listeningRef.current) return;
-          if (!audioRef.current || requestId !== requestRef.current) return;
-          window.dispatchEvent(new Event('foresight:pause-event-audio'));
-          audioRef.current.src = nextUrl;
-          audioRef.current.load();
-          audioRef.current.play().then(() => setStatus('playing')).catch(() => setStatus('paused'));
-        }, 0);
-      } catch (requestError) {
-        if (!cancelled) {
-          setStatus('error');
-          setError(requestError.message);
-        }
-      } finally {
-        inFlightRef.current = false;
-      }
-    };
-
-    loadLatest(true);
-    const refreshTimer = window.setInterval(() => loadLatest(false), 3000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(refreshTimer);
-    };
-  }, [beaconId]);
-
-  const togglePlayback = () => {
-    if (!audioRef.current || !audioUrl) return;
-    if (audioRef.current.paused) {
-      window.dispatchEvent(new Event('foresight:pause-event-audio'));
-      setListening(true);
-      listeningRef.current = true;
-      audioRef.current.play().then(() => setStatus('playing')).catch(() => setStatus('paused'));
-    } else {
-      setListening(false);
-            listeningRef.current = false;
-      audioRef.current.pause();
-      setStatus('paused');
-    }
-  };
-
-  const stopPlayback = () => {
-    if (!audioRef.current) return;
-    setListening(false);
-          listeningRef.current = false;
-      audioRef.current.pause();
-    audioRef.current.currentTime = 0;
-    setStatus(audioUrl ? 'paused' : 'waiting');
-  };
-
-  if (!beaconId) return null;
-  const statusLabel = status === 'loading' ? 'Loading capture…' : status === 'waiting' ? 'Waiting for first capture' : status === 'error' ? error : status === 'playing' ? 'Listening live' : 'Capture ready';
-
+export default function BeaconAudioPlayer() {
+  const player = useLiveAudio();
+  if (!player) return null;
+  const { status, meta, error, play, pause, stop } = player;
+  const playing = status === 'playing';
+  const label = error || ({ loading: 'Loading capture...', waiting: 'Waiting for next capture', paused: 'Paused by you',
+    ready: 'Press Play to allow audio', playing: 'Listening live' }[status] || 'Capture ready');
   return <div className="beacon-audio-player mt-4 rounded-2xl border border-moss-500/25 bg-white p-4 shadow-sm">
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0"><p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.14em] text-moss-500"><Radio weight="duotone" size={12} /> LISTENING</p><p className="mt-1 text-[10px] text-slate-500">{statusLabel}</p></div>
-      {status === 'loading' && <CircleNotch weight="duotone" size={16} className="animate-spin text-moss-500" />}
+    <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.14em] text-moss-500"><Radio size={12} /> LISTENING</p>
+    <p aria-live="polite" className="mt-1 text-[10px] text-slate-500">{label}</p>
+    {status === 'loading' && <CircleNotch size={16} className="animate-spin" />}
+    <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2"><Waveform playing={playing} /></div>
+    <div className="mt-3 flex items-center gap-2">
+      <button type="button" onClick={playing ? pause : play} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white">
+        {playing ? <Pause size={13} /> : <Play size={13} />}{playing ? 'Pause' : 'Play capture'}
+      </button>
+      <button type="button" onClick={stop} aria-label="Stop listening" className="rounded-lg border border-slate-300 px-3 py-2"><Stop size={13} /></button>
     </div>
-    <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2"><Waveform playing={status === 'playing'} /><audio ref={audioRef} src={audioUrl || undefined} preload="auto" className="mt-2 h-8 w-full" onPlay={() => setStatus('playing')} onPause={() => { if (status === 'playing') setStatus('paused'); }} onEnded={() => setStatus('paused')} /></div>
-    <div className="mt-3 flex items-center gap-2"><button type="button" onClick={togglePlayback} disabled={!audioUrl} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-moss-400 disabled:cursor-not-allowed disabled:opacity-40">{status === 'playing' ? <Pause weight="duotone" size={13} /> : <Play weight="duotone" size={13} />}{status === 'playing' ? 'Pause' : 'Play capture'}</button><button type="button" onClick={stopPlayback} disabled={!audioUrl} aria-label="Stop listening" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"><Stop weight="duotone" size={13} /></button></div>
-    <p className="mt-2 text-[10px] text-slate-500">{receivedAt ? `Last capture ${new Date(receivedAt).toLocaleTimeString()} · ${captureMeta?.sound_class || 'Unclassified'}` : 'Audio appears after the next upload.'}</p>
-    <p className="mt-1 text-[10px] text-slate-500">Classifier: {captureMeta?.classifier_backend || 'unknown'} · YAMNet: {captureMeta?.yamnet_loaded ? 'loaded' : 'fallback'}</p>
+    <p className="mt-2 text-[10px] text-slate-500">{meta ? `${meta.sound || meta.sound_class || 'Processing'} - ${new Date(meta.received_at).toLocaleTimeString()}` : 'Audio appears after the next capture.'}</p>
+    <p className="mt-1 text-[10px] text-slate-500">Listening continues across pages until you pause.</p>
   </div>;
 }

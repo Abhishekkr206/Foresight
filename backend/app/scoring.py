@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
 
+BOUNDS = {"min_lat": -4.15, "max_lat": -3.85, "min_lon": -55.20, "max_lon": -54.90}
+
+
 THREAT_WEIGHTS: dict[str, float] = {
     "Chainsaw": 0.9,
     "Power saw": 0.9,

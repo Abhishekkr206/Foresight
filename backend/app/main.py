@@ -10,9 +10,10 @@ import numpy as np
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
-from .assistant import AssistantRequest, AssistantResponse, answer_query
+from .assistant import AssistantRequest, AssistantResponse, answer_query, assistant_status
 from .audio import classifier_status
 from .config import get_settings
+from .health import get_forest_summary
 from .db import Base, SessionLocal, engine, get_db
 from .models import Beacon, BeaconStatus, Correlation, Event
 from .pipeline import Pipeline
@@ -81,10 +82,12 @@ async def lifespan(app: FastAPI):
         seed_beacons(db)
     finally:
         db.close()
+    storage.start_uploader(SessionLocal, broadcast)
     if settings.enable_simulation:
         app.state.simulator.start()
     yield
     await app.state.simulator.stop()
+    await asyncio.to_thread(storage.stop_uploader)
 
 
 app = FastAPI(title='Foresight Forest Acoustic Surveillance API', version='1.0.0', lifespan=lifespan)
@@ -155,10 +158,12 @@ async def ingest_audio(beacon_id: str, audio: UploadFile = File(...)):
 
 
 @app.get('/api/debug/audio/latest')
-def latest_debug_audio(beacon_id: str = 'BEACON_01'):
+def latest_debug_audio(beacon_id: str = 'BEACON_01', capture_id: str | None = None):
     capture = pipeline.latest_audio(beacon_id)
     if capture is None:
         raise HTTPException(404, f'no audio capture received yet for {beacon_id}')
+    if capture_id is not None and capture_id != capture['capture_id']:
+        raise HTTPException(409, 'capture replaced; fetch current audio metadata')
     return Response(
         content=capture['data'],
         media_type=capture.get('content_type') or 'audio/wav',
@@ -173,6 +178,12 @@ def latest_debug_audio_meta(beacon_id: str = 'BEACON_01'):
         raise HTTPException(404, f'no audio capture received yet for {beacon_id}')
     return {
         'beacon_id': beacon_id,
+        'capture_id': capture['capture_id'],
+        'scenario_id': capture.get('scenario_id'),
+        'zone': capture.get('zone'),
+        'sound': capture.get('sound'),
+        'is_simulated': capture.get('is_simulated', False),
+        'expires_at': capture.get('expires_at'),
         'filename': capture['filename'],
         'content_type': capture.get('content_type') or 'audio/wav',
         'received_at': capture['received_at'],
@@ -275,28 +286,7 @@ def event_correlation(event_id: int, db: Session = Depends(get_db)):
 
 @app.get('/api/summary')
 def summary(db: Session = Depends(get_db)):
-    now = datetime.now(timezone.utc)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    beacon_list = db.scalars(select(Beacon)).all()
-    statuses = db.scalars(select(BeaconStatus)).all()
-    event_list = db.scalars(select(Event)).all()
-    today_confirmed = [event for event in event_list if event.is_confirmed and as_utc(event.timestamp) >= today]
-    active_count = sum(now - as_utc(status.last_seen) <= timedelta(seconds=settings.heartbeat_timeout_seconds) for status in statuses)
-    health_window_start = now - timedelta(minutes=5)
-    recent_events = [event for event in event_list if as_utc(event.timestamp) >= health_window_start]
-    latest_by_beacon = {}
-    for event in recent_events:
-        current = latest_by_beacon.get(event.beacon_id)
-        if current is None or as_utc(event.timestamp) > as_utc(current.timestamp):
-            latest_by_beacon[event.beacon_id] = event
-    active_threats = [event for event in latest_by_beacon.values() if event.final_score >= settings.event_threshold and as_utc(event.timestamp) >= now - timedelta(seconds=settings.heartbeat_timeout_seconds)]
-    live_average_aci = sum(event.aci_value for event in latest_by_beacon.values()) / len(latest_by_beacon) if latest_by_beacon else settings.aci_baseline
-    aci_health = max(0.0, min(1.0, live_average_aci / settings.aci_baseline))
-    active_threat_score = max((event.final_score for event in active_threats), default=0.0)
-    threat_penalty = min(0.35, 0.35 * active_threat_score)
-    health = max(0.0, min(1.0, aci_health - threat_penalty))
-    historical_average_aci = sum(event.aci_value for event in event_list) / len(event_list) if event_list else settings.aci_baseline
-    return {'beacon_count': len(beacon_list), 'active_beacon_count': active_count, 'confirmed_events_today': len(today_confirmed), 'average_aci': live_average_aci, 'historical_average_aci': historical_average_aci, 'live_average_aci': live_average_aci, 'aci_health_score': round(aci_health * 100, 1), 'active_threat_penalty': round(threat_penalty * 100, 1), 'health_window_minutes': 5, 'forest_health_score': round(health * 100, 1), 'active_threat_count': len(active_threats)}
+    return get_forest_summary(db, settings, now=datetime.now(timezone.utc))
 
 
 @app.get('/api/status', response_model=list[StatusOut])
@@ -322,7 +312,7 @@ def uploaded_file(filename: str):
 
 
 @app.post('/api/simulation/start')
-def start_simulation():
+async def start_simulation():
     if not settings.enable_simulation: raise HTTPException(404, 'simulation disabled')
     app.state.simulator.start(); result = app.state.simulator.status(); broadcast({'type': 'simulation.status', 'data': result}); return result
 
@@ -339,11 +329,15 @@ async def stop_simulation():
 
 
 @app.post('/api/simulation/trigger')
-def trigger_simulation(payload: SimulationTrigger):
+async def trigger_simulation(payload: SimulationTrigger):
     if not settings.enable_simulation: raise HTTPException(404, 'simulation disabled')
-    try: app.state.simulator.trigger(payload.zone, payload.sound, payload.duration_seconds)
+    locations = await asyncio.to_thread(app.state.simulator._beacon_locations)
+    try: accepted = app.state.simulator.trigger(payload.zone, payload.sound, payload.duration_seconds, locations)
     except ValueError as exc: raise HTTPException(400, str(exc)) from exc
-    result = app.state.simulator.status(); broadcast({'type': 'simulation.status', 'data': result}); return result
+    result = app.state.simulator.status()
+    result['accepted_scenario'] = accepted
+    broadcast({'type': 'simulation.status', 'data': result})
+    return result
 
 
 @app.get('/api/query/events', response_model=list[EventOut])
@@ -361,9 +355,14 @@ def safe_aci(beacon_id: str, time_range: str = '24h', db: Session = Depends(get_
     return safe_get_aci_trend(db, beacon_id, time_range)
 
 
+@app.get('/api/assistant/status')
+def get_assistant_status():
+    return assistant_status(settings)
+
+
 @app.post('/api/assistant/query', response_model=AssistantResponse)
 def assistant_query(payload: AssistantRequest, db: Session = Depends(get_db)):
-    return answer_query(payload.prompt, db, settings)
+    return answer_query(payload.prompt, db, settings, history=payload.history, selection=payload.selection.model_dump(exclude_none=True))
 
 
 @app.websocket('/ws')

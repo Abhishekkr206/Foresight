@@ -6,6 +6,7 @@ import os
 import wave
 from functools import lru_cache
 from pathlib import Path
+from threading import Lock
 
 import numpy as np
 
@@ -23,6 +24,7 @@ MODEL_DIR = next(
 LITE_MODEL_PATH = MODEL_DIR / 'yamnet.tflite'
 LITE_LABELS_PATH = MODEL_DIR / 'yamnet_labels.csv'
 CLASSIFIER_BACKEND = os.getenv('CLASSIFIER_BACKEND', 'full').lower()
+_lite_inference_lock = Lock()
 LITE_YAMNET_ERROR: str | None = None
 LITE_LABELS_ERROR: str | None = None
 
@@ -253,15 +255,16 @@ def classify(samples: np.ndarray, sample_rate: int = 16_000, fallback_label: str
         interpreter = _lite_yamnet()
         if interpreter is not None:
             try:
-                input_info = interpreter.get_input_details()[0]
-                interpreter.resize_tensor_input(input_info['index'], [len(samples)], strict=False)
-                interpreter.allocate_tensors()
-                interpreter.set_tensor(input_info['index'], samples.astype(np.float32))
-                interpreter.invoke()
-                output_info = interpreter.get_output_details()[0]
-                values = np.asarray(interpreter.get_tensor(output_info['index'])).mean(axis=0)
-                labels = _lite_yamnet_labels()
-                result = {_canonical_label(labels[i]): float(values[i]) for i in np.argsort(values)[-10:]}
+                with _lite_inference_lock:
+                    input_info = interpreter.get_input_details()[0]
+                    interpreter.resize_tensor_input(input_info['index'], [len(samples)], strict=False)
+                    interpreter.allocate_tensors()
+                    interpreter.set_tensor(input_info['index'], samples.astype(np.float32))
+                    interpreter.invoke()
+                    output_info = interpreter.get_output_details()[0]
+                    values = np.asarray(interpreter.get_tensor(output_info['index'])).mean(axis=0)
+                    labels = _lite_yamnet_labels()
+                    result = {_canonical_label(labels[i]): float(values[i]) for i in np.argsort(values)[-10:]}
                 logger.info('LiteRT YAMNet classified audio: %s', result)
                 return result
             except Exception as exc:

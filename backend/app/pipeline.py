@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Lock
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +20,9 @@ class Pipeline:
         self.broadcaster = broadcaster
         self._latest_audio: dict[str, dict] = {}
         self._latest_audio_lock = Lock()
+
+    def warmup(self):
+        return classifier_status()
 
     def latest_audio(self, beacon_id: str) -> dict | None:
         """Return the most recent decoded capture for a beacon, if available."""
@@ -41,16 +45,28 @@ class Pipeline:
         content_type: str,
         classification_hint: str | None = None,
         zone: str | None = None,
+        scenario: dict | None = None,
     ) -> Event:
         samples = decode_audio(data)
+        capture_id = uuid4().hex
+        metadata = {
+            'capture_id': capture_id, 'beacon_id': beacon.beacon_id,
+            'scenario_id': (scenario or {}).get('scenario_id'), 'zone': zone,
+            'sound': classification_hint or ('ambient' if not beacon.is_real_hardware else None),
+            'is_simulated': not beacon.is_real_hardware,
+            'received_at': datetime.now(timezone.utc),
+            'expires_at': (scenario or {}).get('expires_at'),
+            'duration_seconds': round(len(samples) / 16000, 3),
+        }
         with self._latest_audio_lock:
             self._latest_audio[beacon.beacon_id] = {
+                **metadata,
                 "data": bytes(data),
                 "samples": samples.copy(),
                 "filename": filename,
                 "content_type": content_type,
-                "received_at": datetime.now(timezone.utc),
             }
+        self.broadcaster({'type': 'audio.ready', 'data': metadata})
         classes = classify(samples, fallback_label=classification_hint)
         classifier = classifier_status()
         label, confidence, threat = threat_score(classes, self.settings.threat_confidence_threshold)
@@ -66,14 +82,15 @@ class Pipeline:
             final_score=final,
             signal_strength=confidence,
         )
+        saved_name = f"{beacon.beacon_id}_{capture_id}_{Path(filename).name}"
         if final >= self.settings.save_threshold:
-            event.audio_file_url = self.storage.save(data, f"{beacon.beacon_id}_{event.timestamp.timestamp():.0f}_{Path(filename).name}", content_type)
+            event.audio_file_url = self.storage.save(data, saved_name, content_type)
         db.add(event)
         db.commit()
         db.refresh(event)
         with self._latest_audio_lock:
             capture = self._latest_audio.get(beacon.beacon_id)
-            if capture is not None:
+            if capture is not None and capture['capture_id'] == capture_id:
                 capture.update({
                     "event_id": event.id,
                     "sound_class": event.sound_class,
@@ -86,7 +103,10 @@ class Pipeline:
                     "yamnet_loaded": classifier.get("yamnet_loaded", False),
                 })
         self._correlate(db, event)
-        self.broadcaster({"type": "event.created", "data": event, "zone": zone})
+        self.broadcaster({"type": "event.created", "data": event, "zone": zone,
+                          "scenario_id": metadata['scenario_id'], 'capture_id': capture_id})
+        if event.audio_file_url:
+            self.storage.queue_upload(event.id, data, saved_name, content_type)
         return event
 
     def _correlate(self, db: Session, event: Event) -> None:

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CircleMarker, MapContainer, Popup, Rectangle, TileLayer, useMap } from 'react-leaflet';
 import { BOUNDS, THREAT_THRESHOLD, zones } from '../config/constants';
 import { MapTrifold as MapIcon, GlobeHemisphereWest as Satellite } from '@phosphor-icons/react';
@@ -26,56 +26,17 @@ function MapFocus({ event, relatedBeacons, selectedBeacon, selectedBeaconId }) {
   return null;
 }
 
-function MapIntro() {
+function MapVisibility({ active }) {
   const map = useMap();
-  const hasRun = useRef(false);
   useEffect(() => {
-    if (hasRun.current) return undefined;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const regionBounds = [[BOUNDS.min_lat, BOUNDS.min_lon], [BOUNDS.max_lat, BOUNDS.max_lon]];
-    let firstFrame;
-    let secondFrame;
-
-    const finishIntro = () => {
-      hasRun.current = true;
-      map.setMaxBounds(regionBounds);
-    };
-
-    map.stop();
-    if (reducedMotion) {
-      hasRun.current = true;
-      map.fitBounds(regionBounds, { animate: false, padding: [12, 12] });
-      map.setMaxBounds(regionBounds);
-      return undefined;
-    }
-
-    const startIntro = () => {
-      if (hasRun.current) return;
-      map.invalidateSize();
-      map.setView([-10, -52], 4, { animate: false });
-      firstFrame = window.requestAnimationFrame(() => {
-        secondFrame = window.requestAnimationFrame(() => {
-          if (hasRun.current) return;
-          map.stop();
-          map.once('moveend', finishIntro);
-          map.flyToBounds(regionBounds, { padding: [24, 24], duration: 2.2, easeLinearity: 0.15 });
-        });
-      });
-    };
-
-    // Waiting for the ready callback plus two paint frames prevents Leaflet's
-    // initial layout from replacing the starting camera before the flight.
-    map.whenReady(startIntro);
-    return () => {
-      if (firstFrame) window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-      map.off('moveend', finishIntro);
-      map.stop();
-    };
-  }, [map]);
+    if (!active) { map.stop(); return; }
+    const frame = requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    return () => cancelAnimationFrame(frame);
+  }, [map, active]);
   return null;
 }
-export default function BeaconMap({ beacons, simulator, selectedZone, setSelectedZone, selectedEvent, relatedBeacons, rippleBeacon, highlightedBeacons, selectedBeaconId, onBeaconSelect }) {
+
+export default function BeaconMap({ active = true, beacons, simulator, selectedZone, setSelectedZone, selectedEvent, relatedBeacons, rippleBeacon, highlightedBeacons, selectedBeaconId, onBeaconSelect }) {
   const stateById = Object.fromEntries(relatedBeacons.map((beacon) => [beacon.beacon_id, beacon]));
   const [mapView, setMapView] = useState('street');
   const selectedBeacon = beacons.find((beacon) => beacon.beacon_id === selectedBeaconId);
@@ -90,10 +51,10 @@ export default function BeaconMap({ beacons, simulator, selectedZone, setSelecte
   const selectedEventBeacon = selectedEvent?.event ? beacons.find((beacon) => beacon.beacon_id === selectedEvent.event.beacon_id) : null;
   const selectedEventZone = selectedEventBeacon ? zoneFor(selectedEventBeacon) : null;
 
-  return <div className="relative"><div className="selected-chunk-label absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm"><span className="font-semibold text-slate-500">SELECTED CHUNK</span><span className="font-bold text-moss-500">{selectedZone || 'No chunk selected'}</span></div><MapContainer className="h-[560px] w-full rounded-xl" center={[-10, -52]} zoom={4} scrollWheelZoom>
+  return <div className="relative"><div className="selected-chunk-label absolute bottom-3 left-3 z-[1000] flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm"><span className="font-semibold text-slate-500">SELECTED CHUNK</span><span className="font-bold text-moss-500">{selectedZone || 'No chunk selected'}</span></div><MapContainer className="h-[560px] w-full rounded-xl" bounds={[[BOUNDS.min_lat, BOUNDS.min_lon], [BOUNDS.max_lat, BOUNDS.max_lon]]} maxBounds={[[BOUNDS.min_lat, BOUNDS.min_lon], [BOUNDS.max_lat, BOUNDS.max_lon]]} scrollWheelZoom>
     <TileLayer attribution={mapView === 'street' ? '&copy; OpenStreetMap contributors' : 'Tiles &copy; Esri'} url={mapView === 'street' ? 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'} />
     <div className="map-view-toggle absolute right-2 top-2 z-[1000] flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-md" onClick={(event) => event.stopPropagation()}><button type="button" aria-label="Street map" aria-pressed={mapView === 'street'} title="Street map" onClick={() => setMapView('street')} className={`flex h-8 w-8 items-center justify-center rounded-md ${mapView === 'street' ? 'bg-moss-500 text-white' : 'text-slate-600 hover:bg-slate-100'}`}><MapIcon weight="duotone" size={15} /></button><button type="button" aria-label="Satellite view" aria-pressed={mapView === 'satellite'} title="Satellite view" onClick={() => setMapView('satellite')} className={`flex h-8 w-8 items-center justify-center rounded-md ${mapView === 'satellite' ? 'bg-moss-500 text-white' : 'text-slate-600 hover:bg-slate-100'}`}><Satellite weight="duotone" size={15} /></button></div>
-    <MapIntro />
+    <MapVisibility active={active} />
     <MapFocus event={selectedEvent} relatedBeacons={relatedBeacons} selectedBeacon={selectedBeacon} selectedBeaconId={selectedBeaconId} />
     {zones.map((zone) => {
       const state = simulator?.zones?.[zone.id];
