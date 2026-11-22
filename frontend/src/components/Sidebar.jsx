@@ -1,5 +1,5 @@
 import { BatteryCharging, CaretLeft, CaretRight, Radio } from '@phosphor-icons/react';
-import { formatHealth, healthStatus } from './HealthSummary';
+import { formatHealth, healthStatus, HealthOverview } from './HealthSummary';
 import BeaconAudioPlayer from './BeaconAudioPlayer';
 
 const fallbackBeacons = [
@@ -23,6 +23,7 @@ export default function Sidebar({ open, onToggle, health, summary = {}, beacons 
           <p className="text-[10px] font-semibold tracking-[.16em] text-slate-500">FOREST HEALTH</p>
           <p className="mt-1 text-5xl font-semibold tracking-[-.08em] text-slate-900">{formatHealth(health)}</p>
           <div className="mt-3 flex items-center gap-2 text-xs text-slate-600">{healthStatus(summary)}</div>
+          <HealthOverview summary={summary} loading={summary.loading} />
         </div>
         <div className="sidebar-stats mt-3 grid grid-cols-2 gap-2">
           {[['ACTIVE', summary.active_beacon_count ?? 0], ['THREATS', summary.active_threat_count ?? 0]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-200 px-3 py-2"><p className="text-[9px] font-semibold tracking-wider text-slate-600">{label}</p><p className="mt-1 text-lg font-semibold text-slate-900">{value}</p></div>)}

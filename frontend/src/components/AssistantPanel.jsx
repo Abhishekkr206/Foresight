@@ -22,18 +22,18 @@ export default function AssistantPanel({ messages, prompt, onPromptChange, onSub
     inputRef.current.style.height = `${Math.min(120, Math.max(48, inputRef.current.scrollHeight))}px`;
   }, [prompt, open]);
   return <aside aria-label="Forest assistant" className={`assistant-rail dashboard-assistant ${open ? '' : 'assistant-collapsed'}`}>
-    <button onClick={onToggle} aria-label={open ? 'Collapse assistant panel' : 'Expand assistant panel'} className="assistant-toggle flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-slate-700">
+    {!open && <button type="button" onClick={onToggle} aria-label="Expand assistant panel" title="Expand assistant panel" className="assistant-toggle flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-slate-700">
       {open ? <CaretRight size={16} /> : <CaretLeft size={16} />}
-    </button>
+    </button>}
     {!open && <div className="assistant-collapsed-identity" aria-label="AI assistant"><Waveform size={17} /><span>AI</span></div>}
-    {open && <>
+    <div className="assistant-body" inert={!open}>
       <header className="assistant-header assistant-header-compact">
-        <h2 className="font-semibold">Foresight AI</h2>
-        <button type="button" onClick={onNewChat} aria-label="New chat" title="New chat" className="assistant-new-chat"><Plus size={17} /></button>
+        <div className="assistant-heading"><span className="assistant-heading-icon"><Waveform size={18} /></span><div><h2 className="font-semibold">Foresight AI</h2><p>Forest monitoring assistant</p></div></div>
+        <div className="assistant-header-actions"><button type="button" onClick={onNewChat} aria-label="New chat" title="New chat" className="assistant-new-chat"><Plus size={17} /></button><button type="button" onClick={onToggle} aria-label="Collapse assistant panel" title="Collapse assistant panel" className="assistant-toggle"><CaretRight size={16} /></button></div>
       </header>
       <div ref={logRef} role="log" aria-label="Conversation" aria-live="polite" className="assistant-messages"
         onScroll={() => { const log = logRef.current; nearBottom.current = log.scrollHeight - log.scrollTop - log.clientHeight < 80; if (nearBottom.current) setNewMessage(false); }}>
-        {messages.length === 0 && <p className="assistant-empty-prompt">What would you like to check?</p>}
+        {messages.length === 0 && <div className="assistant-welcome"><span className="assistant-welcome-icon"><Waveform size={22} /></span><p className="assistant-empty-prompt">What would you like to check?</p><p>Ask about forest health, beacons, or recent events.</p></div>}
         {messages.map((message, index) => <div key={index} className={`assistant-message ${message.role === 'user' ? 'assistant-message-user' : 'assistant-message-ai'}`}>
           <p className="assistant-content">{message.text}</p>
           {!!message.highlightedBeaconIds?.length && <div className="assistant-beacon-links">{message.highlightedBeaconIds.map((id) =>
@@ -51,6 +51,6 @@ export default function AssistantPanel({ messages, prompt, onPromptChange, onSub
         <button aria-label="Send question" disabled={busy || !prompt.trim()} className="assistant-send"><PaperPlaneTilt size={18} /></button>
       </form>
       {highlighted && <button onClick={onClear} className="assistant-clear"><X size={13} /> Clear highlights</button>}
-    </>}
+    </div>
   </aside>;
 }
