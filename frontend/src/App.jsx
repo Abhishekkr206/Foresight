@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useMatch } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import SimulationPage from './pages/SimulationPage';
 import DashboardShell from './components/DashboardShell';
@@ -9,7 +9,7 @@ import useDashboardData, { DashboardDataProvider } from './hooks/useDashboardDat
 
 function Layout() {
   const data = useDashboardData();
-  const simulation = useLocation().pathname === '/simulation';
+  const simulation = Boolean(useMatch('/simulation'));
   const [visited, setVisited] = useState({ dashboard: !simulation, simulation });
   useEffect(() => {
     setVisited((current) => ({ ...current, [simulation ? 'simulation' : 'dashboard']: true }));

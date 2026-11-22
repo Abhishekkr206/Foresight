@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Waveform, CaretLeft, CaretRight, PaperPlaneTilt, Plus, X } from '@phosphor-icons/react';
+import { Waveform, PaperPlaneTilt, Plus, X } from '@phosphor-icons/react';
+import RailToggle from './RailToggle';
 
 export default function AssistantPanel({ messages, prompt, onPromptChange, onSubmit, busy, onNewChat,
   highlighted, onBeaconSelect, onClear, open = true, onToggle }) {
@@ -22,14 +23,12 @@ export default function AssistantPanel({ messages, prompt, onPromptChange, onSub
     inputRef.current.style.height = `${Math.min(120, Math.max(48, inputRef.current.scrollHeight))}px`;
   }, [prompt, open]);
   return <aside aria-label="Forest assistant" className={`assistant-rail dashboard-assistant ${open ? '' : 'assistant-collapsed'}`}>
-    {!open && <button type="button" onClick={onToggle} aria-label="Expand assistant panel" title="Expand assistant panel" className="assistant-toggle flex h-7 w-7 items-center justify-center rounded-lg border bg-white text-slate-700">
-      {open ? <CaretRight size={16} /> : <CaretLeft size={16} />}
-    </button>}
+    <RailToggle side="right" open={open} label="assistant panel" onToggle={onToggle} />
     {!open && <div className="assistant-collapsed-identity" aria-label="AI assistant"><Waveform size={17} /><span>AI</span></div>}
     <div className="assistant-body" inert={!open}>
       <header className="assistant-header assistant-header-compact">
         <div className="assistant-heading"><span className="assistant-heading-icon"><Waveform size={18} /></span><div><h2 className="font-semibold">Foresight AI</h2><p>Forest monitoring assistant</p></div></div>
-        <div className="assistant-header-actions"><button type="button" onClick={onNewChat} aria-label="New chat" title="New chat" className="assistant-new-chat"><Plus size={17} /></button><button type="button" onClick={onToggle} aria-label="Collapse assistant panel" title="Collapse assistant panel" className="assistant-toggle"><CaretRight size={16} /></button></div>
+        <div className="assistant-header-actions"><button type="button" onClick={onNewChat} aria-label="New chat" title="New chat" className="assistant-new-chat"><Plus size={17} /></button></div>
       </header>
       <div ref={logRef} role="log" aria-label="Conversation" aria-live="polite" className="assistant-messages"
         onScroll={() => { const log = logRef.current; nearBottom.current = log.scrollHeight - log.scrollTop - log.clientHeight < 80; if (nearBottom.current) setNewMessage(false); }}>
