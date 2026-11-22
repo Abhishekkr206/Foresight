@@ -10,7 +10,7 @@ export default function DashboardShell({ children, variant, sidebarHealth = 100,
   const linkClass = ({ isActive }) => `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition ${isActive ? 'bg-moss-500 text-white' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`;
   return <div className="min-h-screen bg-slate-50">
     <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((value) => !value)} health={sidebarHealth} summary={sidebarSummary} beacons={sidebarBeacons} selectedBeaconId={selectedBeaconId} onBeaconSelect={onBeaconSelect} highlightedBeaconIds={highlightedBeaconIds} />
-    <div className={`dashboard-shell min-h-screen transition-[padding] duration-300 ${sidebarOpen ? 'pl-72' : 'pl-[76px]'} ${rightPanel ? (assistantOpen ? 'assistant-open' : 'assistant-closed') : ''}`}>
+    <div style={{ '--sidebar-width': sidebarOpen ? '288px' : '76px' }} className={`dashboard-shell min-h-screen transition-[padding] duration-300 ${rightPanel ? (assistantOpen ? 'assistant-open' : 'assistant-closed') : ''}`}>
       <header className="app-topbar flex h-16 items-center justify-end px-5 backdrop-blur fixed right-0">
           <nav className="flex items-center gap-1"><NavLink to="/dashboard" className={linkClass}><SquaresFour weight="duotone" size={14} /> Monitor</NavLink><NavLink to="/simulation" className={linkClass}><SlidersHorizontal weight="duotone" size={14} /> Scenarios</NavLink></nav>
       </header>

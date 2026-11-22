@@ -130,8 +130,6 @@ button:active { transform: scale(.98); }
   .dashboard-assistant { top: 64px !important; right: 0 !important; bottom: 0 !important; left: auto !important; width: 360px !important; height: auto !important; max-height: none !important; margin: 0 !important; border-radius: 0 !important; border-top: 0 !important; border-right: 0 !important; border-bottom: 0 !important; border-left: 1px solid rgba(52,78,65,.16) !important; box-shadow: none !important; }
   .dashboard-assistant.assistant-collapsed { width: 48px !important; padding: 16px 10px !important; }
   .dashboard-content:not(.simulation-content) { padding-right: 28px !important; }
-  .app-topbar { left: 288px; }
-  .dashboard-shell:has(.dashboard-sidebar.w-\[76px\]) .app-topbar { left: 76px; }
 }
 /* Collapsed rail identity and spacing polish. */
 .sidebar-collapsed-status { padding-top: 16px; }
@@ -208,7 +206,8 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
 .dashboard-content .leaflet-container { border-radius: var(--radius-structural) !important; }
 .map-view-toggle { border-radius: var(--radius-structural) !important; }
 /* Keep fixed navigation from covering the first dashboard block. */
-.app-topbar { top: 0 !important; z-index: 50 !important; height: 64px !important; }
+.dashboard-shell { padding-left: var(--sidebar-width); }
+.app-topbar { top: 0 !important; left: var(--sidebar-width); z-index: 50 !important; height: 64px !important; transition: left 300ms cubic-bezier(.4,0,.2,1); }
 .dashboard-content { padding-top: 88px !important; }
 
 /* The assistant is an information rail, with alerts reserved for amber. */
