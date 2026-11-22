@@ -208,8 +208,87 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
 .map-view-toggle { border-radius: var(--radius-structural) !important; }
 /* Keep fixed navigation from covering the first dashboard block. */
 .dashboard-shell { padding-left: var(--sidebar-width); }
+.forest-page { isolation: isolate; }
+.forest-page .dashboard-content { background: transparent !important; }
+@supports (backdrop-filter: blur(1px)) {
+  @media not (prefers-reduced-transparency: reduce) {
+    .forest-page {
+      --panel-glass: linear-gradient(145deg, rgb(255 255 255 / 82%), rgb(240 247 240 / 56%));
+      --glass-edge: inset 0 1px 0 rgb(255 255 255 / 85%), 0 5px 18px rgb(31 61 43 / 7%);
+    }
+    .forest-page .dashboard-sidebar.monitoring-rail,
+    .forest-page .dashboard-assistant,
+    .forest-page .dashboard-content:not(.simulation-content) > section > div,
+    .forest-page .simulation-content > section {
+      background: var(--panel-glass) !important;
+      backdrop-filter: blur(8px) saturate(120%);
+      box-shadow: var(--glass-edge) !important;
+    }
+    .forest-page .sidebar-header,
+    .forest-page .sidebar-health,
+    .forest-page .simulation-content section:not(.dashboard-assistant) > div {
+      background: rgb(255 255 255 / 44%) !important;
+      box-shadow: inset 0 1px 0 rgb(255 255 255 / 72%) !important;
+    }
+    .forest-page .app-topbar .view-switch,
+    .forest-page .map-view-toggle {
+      background: rgb(237 244 237 / 82%) !important;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--glass-edge);
+    }
+  }
+}
+.leaf-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--foresight-canvas);
+}
+.leaf-backdrop span {
+  position: absolute;
+  left: -36px;
+  aspect-ratio: 2;
+  animation: leaf-travel linear infinite;
+}
+.leaf-backdrop span::after {
+  content: "";
+  display: block;
+  height: 100%;
+  border-radius: 90% 5% 85% 8%;
+  background: linear-gradient(155deg, #8ca67d 46%, #d0d9ba 50%, #738f72 54%);
+  opacity: .35;
+  animation: leaf-flutter var(--flutter) ease-in-out infinite alternate;
+  animation-delay: inherit;
+}
+@keyframes leaf-travel {
+  to { transform: translateX(calc(100vw + 72px)); }
+}
+@keyframes leaf-flutter {
+  from { transform: translateY(-14px) rotate(-38deg) scaleY(.65); }
+  to { transform: translateY(14px) rotate(32deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .leaf-backdrop span { display: none; }
+}
+@supports (backdrop-filter: blur(1px)) {
+  @media not (prefers-reduced-transparency: reduce) {
+    .forest-page .dashboard-content:not(.simulation-content) > section > .aci-chart-card {
+      background: linear-gradient(130deg, #ffffffa6, #f1f7ef61) !important;
+      backdrop-filter: blur(4px) saturate(130%);
+      box-shadow: inset 1px 1px 1px white, inset -1px -1px 1px #ffffff94, 0 6px 22px #213f2b12 !important;
+    }
+  }
+}
 .app-topbar { top: 0 !important; left: var(--sidebar-width); z-index: 1100 !important; height: 64px !important; transition: left 300ms cubic-bezier(.4,0,.2,1); }
 .dashboard-content { padding-top: 88px !important; }
+.dashboard-content:not(.simulation-content) { padding-top: 76px !important; }
+@media (min-width: 1280px) {
+  .dashboard-shell.assistant-open .dashboard-content:not(.simulation-content) {
+    padding-top: 16px !important;
+  }
+}
 
 /* The assistant is an information rail, with alerts reserved for amber. */
 .dashboard-assistant { background: var(--foresight-surface) !important; color: var(--foresight-ink) !important; border-left-color: rgba(31,61,43,.18) !important; }
@@ -634,6 +713,7 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
 }
 .monitoring-rail-collapsed { transform: translateX(-212px); }
 .monitoring-rail-collapsed .sidebar-scroll { width: 76px; align-self: flex-end; }
+
 .rail-toggle, .dashboard-assistant .assistant-new-chat {
   display: grid;
   place-items: center;
@@ -653,7 +733,20 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
 .assistant-collapsed > .rail-toggle { display: grid !important; }
 .assistant-collapsed > .assistant-body { display: flex !important; visibility: hidden; }
 @media (min-width: 1280px) {
+  .forest-page .dashboard-sidebar.monitoring-rail {
+    top: 12px;
+    bottom: 12px;
+    overflow: hidden;
+    border-radius: 0 18px 18px 0;
+    border-block: 1px solid rgba(31,61,43,.15);
+    box-shadow: 4px 3px 18px rgba(31,61,43,.09) !important;
+  }
   .dashboard-assistant {
+    top: 64px !important;
+    bottom: 12px !important;
+    border-radius: 18px 0 0 18px !important;
+    border-block: 1px solid rgba(31,61,43,.15) !important;
+    box-shadow: -4px 3px 18px rgba(31,61,43,.09) !important;
     z-index: 1050;
     transition: transform 220ms cubic-bezier(.2,.75,.25,1);
   }
@@ -685,4 +778,39 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Browser approximation of a moving glass selection and pressure highlights. */
+@supports (backdrop-filter: blur(1px)) {
+  @media not (prefers-reduced-transparency: reduce) {
+    .app-topbar .view-switch {
+      border-radius: 999px;
+      background: rgba(228, 235, 226, .74) !important;
+      backdrop-filter: blur(14px) saturate(145%);
+      box-shadow: inset 0 1px 1px white, inset 0 -1px 1px #203b3029, 0 2px 7px #203b301a;
+    }
+    .view-switch::before {
+      border-radius: inherit;
+      background: linear-gradient(155deg, #507263dd, #244635ed 62%, #436755ed);
+      box-shadow: inset 1px 1px 1px #ffffffb8, inset -1px -1px 1px #ffffff60, 0 2px 4px #19342736;
+      transition: transform 360ms cubic-bezier(.25,.94,.32,1.08), scale 180ms ease-out;
+    }
+    .view-switch:active::before { scale: 1.07 .93; }
+    :is(.dashboard-content, .dashboard-sidebar, .dashboard-assistant) button:enabled:active {
+      background-image: radial-gradient(ellipse at 34% 0%, #ffffff73, transparent 75%) !important;
+      box-shadow: inset 1px 1px 2px #ffffffab, inset -1px -1px 2px #21433040;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      :is(.dashboard-content, .dashboard-sidebar, .dashboard-assistant) button:enabled:active {
+        scale: .97 .94;
+      }
+      :is(.dashboard-content, .dashboard-sidebar, .dashboard-assistant) button:enabled {
+        transition-property: scale, transform, background-color, box-shadow;
+        transition-duration: 180ms;
+      }
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-switch:active::before { scale: none; }
 }

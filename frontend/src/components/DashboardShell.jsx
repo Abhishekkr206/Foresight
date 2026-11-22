@@ -1,6 +1,7 @@
 import { SquaresFour, SlidersHorizontal } from '@phosphor-icons/react';
 import { NavLink } from 'react-router-dom';
 import { cloneElement, useState } from 'react';
+import LeafBackdrop from './LeafBackdrop';
 import Sidebar from './Sidebar';
 
 export default function DashboardShell({ children, variant, sidebarHealth = 100, sidebarBeacons = [], sidebarSummary = {}, rightPanel = null, selectedBeaconId = null, onBeaconSelect = () => {}, highlightedBeaconIds = [] }) {
@@ -9,7 +10,8 @@ export default function DashboardShell({ children, variant, sidebarHealth = 100,
   const isSimulation = variant === 'simulation';
   const showAssistant = !isSimulation && rightPanel;
   const linkClass = 'relative flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs';
-  return <div className="min-h-screen bg-slate-50">
+  return <div className="forest-page min-h-screen bg-slate-50">
+    <LeafBackdrop />
     <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((value) => !value)} health={sidebarHealth} summary={sidebarSummary} beacons={sidebarBeacons} selectedBeaconId={selectedBeaconId} onBeaconSelect={onBeaconSelect} highlightedBeaconIds={highlightedBeaconIds} />
     <div style={{ '--sidebar-width': sidebarOpen ? '288px' : '76px' }} className={`dashboard-shell min-h-screen ${showAssistant ? (assistantOpen ? 'assistant-open' : 'assistant-closed') : ''}`}>
       <header className="app-topbar flex h-16 items-center justify-end px-5 fixed right-0">

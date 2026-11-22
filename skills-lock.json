@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "apple-liquid-glass": {
+      "source": "DanielJamesTronca/apple-liquid-glass-skill",
+      "commit": "324b668c511556df6e5d85b082e2029a6e4ccb5a",
+      "sourceType": "github",
+      "skillPath": "skills/apple-liquid-glass/SKILL.md",
+      "computedHash": "7a4616c744be8fcd841d3379fd6b3a270b64d7df0a58bfa15c28f25b6e2978d8"
+    }
+  }
+}
