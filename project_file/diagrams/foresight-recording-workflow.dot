@@ -1,0 +1,19 @@
+digraph Workflow {
+  graph [rankdir=TB, bgcolor=white, pad=0.2, ranksep=0.36, label="From recording to dashboard", labelloc=t, fontname=Arial, fontsize=20];
+  node [shape=box, fontname=Arial, fontsize=13, color="#333333", margin="0.16,0.08"];
+  edge [fontname=Arial, fontsize=11, color="#333333"];
+  beacon [label="Physical beacon captures WAV"];
+  simulation [label="Simulator selects a recording"];
+  decode [label="Decode and resample audio"];
+  score [label="Classify sound, calculate ACI\nand fuse the detection score"];
+  record [label="Persist the event record"];
+  replay [label="Save qualifying audio for replay"];
+  correlate [label="Check for related detections\nfrom other beacons"];
+  display [label="Publish the event to the dashboard"];
+  { rank=same; beacon; simulation; }
+  { rank=same; record; replay; }
+  beacon -> decode;
+  simulation -> decode;
+  decode -> score -> record -> correlate -> display;
+  score -> replay [label="Save threshold met"];
+}

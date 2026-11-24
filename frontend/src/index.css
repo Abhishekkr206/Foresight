@@ -102,7 +102,7 @@ button:active { transform: scale(.98); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 /* Keep operational summary in the left rail, as in the reference composition. */
-@media (min-width: 768px) { .dashboard-content > .dashboard-metrics { display: none !important; } .dashboard-content > section:last-of-type > div:last-child { display: none !important; } }
+@media (min-width: 768px) { .dashboard-content > .dashboard-metrics { display: none !important; } .dashboard-content > section:last-of-type:not(.selected-event-open) > div:last-child { display: none !important; } }
 /* Screenshot correction: contained logo, flush assistant rail, hidden left scrollbar. */
 .sidebar-header { overflow: hidden; }
 .logo-window { position: relative; height: 34px; flex-shrink: 0; overflow: hidden; }

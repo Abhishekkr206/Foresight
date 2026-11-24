@@ -1,0 +1,227 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile>
+  <diagram id="graphviz-layout" name="Graphviz layout">
+    <mxGraphModel grid="0" page="1" pageWidth="853" pageHeight="804">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="heading" value="Foresight | Level-1 DFD" style="text;html=0;align=center;fontFamily=Arial;fontSize=22;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="0" y="18" width="853.0" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="beacon" value="Physical beacon" style="rounded=0;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#333333;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="109.38" y="53.12" width="122.11" height="36.0" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" value="1.0&#10;Receive audio&#10;and heartbeats" style="ellipse;aspect=fixed;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="174.13" y="156.32" width="160.6" height="160.6" as="geometry" />
+        </mxCell>
+        <mxCell id="sim" value="Scenario simulator" style="rounded=0;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#333333;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="271.39" y="53.12" width="136.09" height="36.0" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="2.0&#10;Classify and&#10;score audio" style="ellipse;aspect=fixed;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="451.25" y="168.44" width="136.36" height="136.36" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="D2&#10;Beacon status" style="shape=partialRectangle;left=0;right=0;top=1;bottom=1;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="175.99" y="384.12" width="108.89" height="66.0" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="3.0&#10;Correlate&#10;detections" style="ellipse;aspect=fixed;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="715.05" y="177.24" width="118.76" height="118.76" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="D3&#10;Events and correlations" style="shape=partialRectangle;left=0;right=0;top=1;bottom=1;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="532.2" y="384.12" width="166.47" height="66.0" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="D4&#10;Saved audio recordings" style="shape=partialRectangle;left=0;right=0;top=1;bottom=1;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="324.81" y="384.12" width="167.25" height="66.0" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="D1&#10;Beacon registry" style="shape=partialRectangle;left=0;right=0;top=1;bottom=1;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="18.72" y="384.12" width="117.43" height="66.0" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="4.0&#10;Serve&#10;monitoring data" style="ellipse;aspect=fixed;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#222222;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="228.94" y="517.33" width="164.98" height="164.98" as="geometry" />
+        </mxCell>
+        <mxCell id="officer" value="Forest officer" style="rounded=0;html=0;whiteSpace=wrap;align=center;fontFamily=Arial;fontSize=14;fillColor=#ffffff;strokeColor=#333333;fontColor=#171717;" vertex="1" parent="1">
+          <mxGeometry x="260.51" y="749.51" width="101.85" height="36.0" as="geometry" />
+        </mxCell>
+        <mxCell id="edge0" edge="1" parent="1" source="beacon" target="p1" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.5412;exitY=1.0108;exitPerimeter=0;entryX=0.2255;entryY=0.0672;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="181.97" y="108.88" />
+              <mxPoint x="190.35" y="129.32" />
+              <mxPoint x="197.56" y="143.88" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label0" value="Audio and heartbeat" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="181.94" y="115.02" width="115.89999999999999" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" edge="1" parent="1" source="sim" target="p1" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.4332;exitY=1.0136;exitPerimeter=0;entryX=0.7329;entryY=0.0457;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="315.07" y="118.99" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label1" value="Simulated audio and status" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="301.37" y="115.02" width="158.6" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" edge="1" parent="1" source="p1" target="p2" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=1.0018;exitY=0.5000;exitPerimeter=0;entryX=-0.0140;entryY=0.5000;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="387.23" y="236.62" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label2" value="Audio capture" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="353.35" y="219.32" width="79.3" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" edge="1" parent="1" source="p1" target="d2" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.4338;exitY=0.9986;exitPerimeter=0;entryX=0.5416;entryY=-0.0265;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="239.92" y="345.58" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label3" value="Heartbeat record" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="232.05" y="342.82" width="97.6" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge4" edge="1" parent="1" source="p2" target="p3" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=1.0037;exitY=0.5000;exitPerimeter=0;entryX=-0.0152;entryY=0.5000;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="645.59" y="236.62" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label4" value="Scored detection" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="602.53" y="219.32" width="97.6" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge5" edge="1" parent="1" source="p2" target="d3" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.5370;exitY=1.0022;exitPerimeter=0;entryX=0.1985;entryY=-0.0176;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="531.57" y="331.95" />
+              <mxPoint x="543.07" y="357.12" />
+              <mxPoint x="550.02" y="367.09" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label5" value="Event record" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="537.65" y="342.82" width="73.19999999999999" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" edge="1" parent="1" source="p2" target="d4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.1461;exitY=0.8581;exitPerimeter=0;entryX=0.5388;entryY=-0.0282;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="448.53" y="313.35" />
+              <mxPoint x="428.99" y="343.92" />
+              <mxPoint x="422.56" y="358.05" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label6" value="Qualifying audio clip" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="414.16" y="342.82" width="128.1" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" edge="1" parent="1" source="p3" target="d3" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.4092;exitY=0.9958;exitPerimeter=0;entryX=0.9889;entryY=0.0195;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="751.38" y="327.82" />
+              <mxPoint x="732.43" y="357.12" />
+              <mxPoint x="719.73" y="369.48" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label7" value="Correlation result" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="727.72" y="342.82" width="109.8" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge8" edge="1" parent="1" source="d1" target="p1" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.6104;exitY=-0.0065;exitPerimeter=0;entryX=0.0684;entryY=0.7765;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="101.15" y="363.29" />
+              <mxPoint x="114.69" y="343.92" />
+              <mxPoint x="144.44" y="313.51" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label8" value="Beacon ID and location" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="104.46" y="342.82" width="134.2" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge9" edge="1" parent="1" source="d1" target="p4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.7527;exitY=1.0045;exitPerimeter=0;entryX=0.0669;entryY=0.2294;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="127.56" y="470.69" />
+              <mxPoint x="149.66" y="490.32" />
+              <mxPoint x="190.26" y="521.35" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label9" value="Beacon locations" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="142.75" y="476.02" width="97.6" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge10" edge="1" parent="1" source="d2" target="p4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.5481;exitY=1.0042;exitPerimeter=0;entryX=0.2229;entryY=0.0695;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="240.47" y="470.38" />
+              <mxPoint x="247.09" y="490.32" />
+              <mxPoint x="253.59" y="505.22" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label10" value="Battery and last seen" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="234.71" y="476.02" width="128.1" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge11" edge="1" parent="1" source="d3" target="p3" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.5719;exitY=-0.0029;exitPerimeter=0;entryX=0.0807;entryY=0.8011;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="637.40" y="363.51" />
+              <mxPoint x="650.01" y="343.92" />
+              <mxPoint x="681.93" y="308.82" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label11" value="Prior detections" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="639.42" y="342.82" width="97.6" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge12" edge="1" parent="1" source="d3" target="p4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.1777;exitY=0.9983;exitPerimeter=0;entryX=0.9371;entryY=0.2341;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="479.43" y="498.96" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label12" value="Event history" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="500.57" y="476.02" width="79.3" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge13" edge="1" parent="1" source="d4" target="p4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.3963;exitY=1.0047;exitPerimeter=0;entryX=0.7390;entryY=0.0488;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="374.29" y="481.73" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label13" value="Replay audio" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="369.8" y="476.02" width="73.19999999999999" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge14" edge="1" parent="1" source="p4" target="officer" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=0.4419;exitY=0.9984;exitPerimeter=0;entryX=0.4554;entryY=-0.0536;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="301.64" y="702.44" />
+              <mxPoint x="302.77" y="722.51" />
+              <mxPoint x="303.70" y="730.11" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label14" value="Dashboard data, alerts and audio" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="286.5" y="708.21" width="195.2" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="edge15" edge="1" parent="1" source="officer" target="p4" style="curved=1;endArrow=block;endFill=1;strokeColor=#333333;exitX=1.0027;exitY=0.2811;exitPerimeter=0;entryX=0.9865;entryY=0.6551;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="429.92" y="745.21" />
+              <mxPoint x="475.43" y="722.51" />
+              <mxPoint x="469.38" y="669.11" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="label15" value="Monitoring and replay requests" style="text;html=0;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#171717;fillColor=#ffffff;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="466.53" y="708.21" width="183.0" height="15" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await page.route(/tile\.openstreetmap\.org/, (route) => route.abort());
@@ -71,9 +71,9 @@ test('a hanging summary cannot block navigation or other content', async ({ page
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
-test('scenario controls remain usable after repeated route switches', async ({ page }) => {
+test('scenario controls remain usable after repeated route switches', async ({ page, api }) => {
   test.setTimeout(90000);
-  await page.request.post('http://localhost:8000/api/simulation/start');
+  await api.post('/api/simulation/start');
   await page.goto('/simulation');
   await expect(page.getByRole('button', { name: 'Stop simulation' })).toBeEnabled();
   await page.getByRole('button', { name: 'Stop simulation' }).click();

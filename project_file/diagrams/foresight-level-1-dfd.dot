@@ -1,0 +1,35 @@
+digraph Foresight {
+  graph [rankdir=TB, bgcolor=white, pad=0.26, nodesep=0.55, ranksep=0.75, labelloc=t, label="Foresight | Level-1 DFD", fontname="Arial", fontsize=22];
+  node [style=filled, fontname=Arial, fontsize=14, fontcolor="#171717", margin="0.14,0.1"];
+  edge [fontname=Arial, fontsize=11, color="#333333", fontcolor="#171717"];
+  beacon [shape=box, label="Physical beacon", fillcolor="#ffffff", color="#333333"];
+  sim [shape=box, label="Scenario simulator", fillcolor="#ffffff", color="#333333"];
+  p1 [shape=circle, label="1.0\nReceive audio\nand heartbeats", fillcolor="#ffffff", color="#222222"];
+  p2 [shape=circle, label="2.0\nClassify and\nscore audio", fillcolor="#ffffff", color="#222222"];
+  p3 [shape=circle, label="3.0\nCorrelate\ndetections", fillcolor="#ffffff", color="#222222"];
+  d1 [shape=plain, style="", label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="9" COLOR="#222222"><TR><TD SIDES="TB" WIDTH="145">D1<BR/>Beacon registry</TD></TR></TABLE>>];
+  d2 [shape=plain, style="", label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="9" COLOR="#222222"><TR><TD SIDES="TB" WIDTH="145">D2<BR/>Beacon status</TD></TR></TABLE>>];
+  d3 [shape=plain, style="", label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="9" COLOR="#222222"><TR><TD SIDES="TB" WIDTH="145">D3<BR/>Events and correlations</TD></TR></TABLE>>];
+  d4 [shape=plain, style="", label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="9" COLOR="#222222"><TR><TD SIDES="TB" WIDTH="145">D4<BR/>Saved audio recordings</TD></TR></TABLE>>];
+  p4 [shape=circle, label="4.0\nServe\nmonitoring data", fillcolor="#ffffff", color="#222222"];
+  officer [shape=box, label="Forest officer", fillcolor="#ffffff", color="#333333"];
+  { rank=same; beacon; sim; }
+  { rank=same; p1; p2; p3; }
+  { rank=same; d1; d2; d3; d4; }
+  beacon -> p1 [label="Audio and heartbeat"];
+  sim -> p1 [label="Simulated audio and status"];
+  p1 -> p2 [label="Audio capture"];
+  p2 -> p3 [label="Scored detection"];
+  d1 -> p1 [label="Beacon ID and location", constraint=false];
+  p1 -> d2 [label="Heartbeat record"];
+  p2 -> d3 [label="Event record"];
+  p2 -> d4 [label="Qualifying audio clip"];
+  d3 -> p3 [label="Prior detections", constraint=false];
+  p3 -> d3 [label="Correlation result"];
+  d1 -> p4 [label="Beacon locations"];
+  d2 -> p4 [label="Battery and last seen"];
+  d3 -> p4 [label="Event history"];
+  d4 -> p4 [label="Replay audio"];
+  officer -> p4 [label="Monitoring and replay requests", constraint=false];
+  p4 -> officer [label="Dashboard data, alerts and audio"];
+}

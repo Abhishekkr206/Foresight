@@ -6,6 +6,7 @@ import BeaconMap from '../components/BeaconMap';
 import Waveform from '../components/Waveform';
 import useDashboardData from '../hooks/useDashboardData';
 import { BOUNDS, THREAT_THRESHOLD } from '../config/constants';
+import { getBlob } from '../services/api';
 
 function EventActivity({ loading, events, selectedEvent, highlightedEvents, newEventIds, filterBeacon, setFilterBeacon, filterLevel, setFilterLevel, confirmedOnly, setConfirmedOnly, beacons, activeThreats, onSelect }) {
   return <div className="event-activity-panel min-h-[430px] rounded-2xl border border-slate-200 bg-white p-5 shadow-xl transition-[min-height] duration-300">
@@ -19,10 +20,34 @@ function EventActivity({ loading, events, selectedEvent, highlightedEvents, newE
 }
 
 function SelectedEvent({ selectedEvent, correlation, setSelectedEvent, setCorrelation, playing, setPlaying, audioRef, playReplay }) {
+  const recording = selectedEvent?.event.audio_file_url;
+  const localRecording = recording?.startsWith('/uploads/') ? recording : null;
+  const [loadedAudio, setLoadedAudio] = useState(null);
+
+  useEffect(() => {
+    if (!localRecording) return;
+    const controller = new AbortController();
+    let url;
+    getBlob(localRecording, { signal: controller.signal, cache: 'no-store' }).then((blob) => {
+      if (controller.signal.aborted) return;
+      url = URL.createObjectURL(blob);
+      setLoadedAudio({ recording: localRecording, url });
+    }).catch(() => {
+      if (!controller.signal.aborted) setLoadedAudio({ recording: localRecording, error: true });
+    });
+    return () => {
+      controller.abort();
+      if (url) URL.revokeObjectURL(url);
+      setLoadedAudio(null);
+    };
+  }, [localRecording]);
+
+  const localAudio = loadedAudio?.recording === localRecording ? loadedAudio : null;
+  const source = localRecording ? localAudio?.url : recording;
   return <div className="event-activity-panel min-h-[430px] rounded-2xl border border-slate-200 bg-white p-5 shadow-xl transition-[min-height] duration-300"><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold text-slate-900">Selected event</h2>{selectedEvent && <button onClick={() => { setSelectedEvent(null); setCorrelation({ events: [], beacons: [] }); }} className="text-xs text-slate-600 hover:text-slate-900">Clear</button>}</div>
     {!selectedEvent ? <p className="text-sm text-slate-500">Select an event to inspect its location, scores, and recording.</p> : <div><div className="grid grid-cols-2 gap-3 text-sm"><p><span className="block text-xs text-slate-500">Sound</span><strong>{selectedEvent.event.sound_class}</strong></p><p><span className="block text-xs text-slate-500">Beacon</span><strong>{selectedEvent.event.beacon_id}</strong></p><p><span className="block text-xs text-slate-500">Threat</span><strong className="text-warning">{Math.round(selectedEvent.event.threat_score * 100)}%</strong></p><p><span className="block text-xs text-slate-500">Fusion score</span><strong className="text-threat">{Math.round(selectedEvent.event.final_score * 100)}%</strong></p><p><span className="block text-xs text-slate-500">ACI</span><strong>{selectedEvent.event.aci_value.toFixed(3)}</strong></p><p><span className="block text-xs text-slate-500">Time</span><strong>{new Date(selectedEvent.event.timestamp).toLocaleString()}</strong></p></div>
       {selectedEvent.event.is_confirmed && <p className="mt-4 rounded-lg border border-moss-500/40 bg-moss-500/10 p-3 text-xs text-slate-600">Confirmed by multiple beacons / nearest guess: {correlation.correlation?.estimated_proximity_beacon_id || 'unknown'}</p>}
-      {selectedEvent.event.audio_file_url ? <div className="mt-4"><Waveform playing={playing} /><audio ref={audioRef} controls className="mt-2 h-8 w-full" src={selectedEvent.event.audio_file_url.startsWith('http') ? selectedEvent.event.audio_file_url : `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${selectedEvent.event.audio_file_url}`} onPlay={() => { window.dispatchEvent(new Event('foresight:pause-live-audio')); setPlaying(true); }} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /><button onClick={playReplay} className="mt-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white">Replay recording</button></div> : <p className="mt-4 rounded-lg bg-slate-100 p-3 text-xs text-slate-600">Audio was not saved for this event.</p>}
+      {source ? <div className="mt-4"><Waveform playing={playing} /><audio ref={audioRef} controls className="mt-2 h-8 w-full" src={source} onPlay={() => { window.dispatchEvent(new Event('foresight:pause-live-audio')); setPlaying(true); }} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} /><button onClick={playReplay} className="mt-2 rounded-lg bg-moss-500 px-3 py-2 text-xs font-semibold text-white">Replay recording</button></div> : <p className="mt-4 rounded-lg bg-slate-100 p-3 text-xs text-slate-600">{localAudio?.error ? 'Recording unavailable.' : recording ? 'Loading recording…' : 'Audio was not saved for this event.'}</p>}
     </div>}
   </div>;
 }
@@ -67,7 +92,7 @@ export default function DashboardPage({ active = true }) {
       {error && <div className="mb-4 rounded-xl border border-threat/50 bg-slate-100 px-4 py-3 text-sm text-slate-700">{error}</div>}
       <section className="dashboard-intro-item dashboard-intro-item-2"><div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xl sm:p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="font-semibold text-slate-900">Coverage map</h2><div className="flex items-center gap-3"><span className="text-xs text-slate-600">OpenStreetMap</span><button type="button" onClick={refresh} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"><ArrowsClockwise weight="duotone" size={14} /> Refresh</button></div></div>{initialLoading ? <div className="flex h-[530px] items-center justify-center rounded-xl bg-slate-100"><div className="text-center"><div className="mx-auto h-2 w-40 animate-pulse rounded-full bg-slate-300" /><p className="mt-3 text-xs text-slate-500">Loading forest signal</p></div></div> : <BeaconMap active={active} beacons={beacons} simulator={simulator} selectedZone={selectedZone} setSelectedZone={setSelectedZone} selectedEvent={selectedEvent} relatedBeacons={correlation.beacons || []} rippleBeacon={rippleBeacon} highlightedBeacons={highlightedBeacons} selectedBeaconId={selectedBeaconId} onBeaconSelect={toggleBeacon} />}</div></section>
       <section className="dashboard-intro-item dashboard-intro-item-3 mt-4 grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1.55fr)]"><EventActivity loading={!loaded.events && !resourceErrors.events} events={events} selectedEvent={selectedEvent} highlightedEvents={highlightedEvents} newEventIds={newEventIds} filterBeacon={filterBeacon} setFilterBeacon={setFilterBeacon} filterLevel={filterLevel} setFilterLevel={setFilterLevel} confirmedOnly={confirmedOnly} setConfirmedOnly={setConfirmedOnly} beacons={beacons} activeThreats={activeThreats} onSelect={handleEventSelect} />{!loaded.aci && !resourceErrors.aci ? <p role="status" className="rounded-2xl bg-white p-6 text-sm text-slate-500">Loading acoustic history…</p> : <AciChart data={aciData} beaconId={aciBeacon} />}</section>
-      <section className="dashboard-intro-item dashboard-intro-item-4 mt-4"><SelectedEvent selectedEvent={selectedEvent} correlation={correlation} setSelectedEvent={setSelectedEvent} setCorrelation={setCorrelation} playing={playing} setPlaying={setPlaying} audioRef={audioRef} playReplay={playReplay} /></section>
+      <section className={`dashboard-intro-item dashboard-intro-item-4 mt-4 ${selectedEvent ? 'selected-event-open' : ''}`}><SelectedEvent selectedEvent={selectedEvent} correlation={correlation} setSelectedEvent={setSelectedEvent} setCorrelation={setCorrelation} playing={playing} setPlaying={setPlaying} audioRef={audioRef} playReplay={playReplay} /></section>
     </main>
   );
 }

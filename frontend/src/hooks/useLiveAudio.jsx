@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { API } from '../config/constants';
-import { getJson } from '../services/api';
+import { getBlob, getJson } from '../services/api';
 import useDashboardData from './useDashboardData';
 
 const Context = createContext(null);
@@ -90,10 +89,7 @@ export function LiveAudioProvider({ children }) {
           setMeta(state.current.meta); state.checkExpiry(); return;
         }
         if (state.pending?.meta.capture_id === capture.capture_id) return;
-        const response = await fetch(`${API}/api/debug/audio/latest?beacon_id=${encodeURIComponent(selectedBeaconId)}&capture_id=${encodeURIComponent(capture.capture_id)}`, { signal: controller.signal, cache: 'no-store' });
-        if (response.status === 409) { state.queued = true; return; }
-        if (!response.ok) throw new Error('Audio capture unavailable');
-        const blob = await response.blob();
+        const blob = await getBlob(`/api/debug/audio/latest?beacon_id=${encodeURIComponent(selectedBeaconId)}&capture_id=${encodeURIComponent(capture.capture_id)}`, { signal: controller.signal, cache: 'no-store' });
         if (state.disposed || generation !== state.generation || !isValid(capture)) return;
         const item = { meta: capture, url: URL.createObjectURL(blob) };
         if (!capture.is_simulated && state.current && !audio.paused && !audio.ended) {
@@ -101,7 +97,9 @@ export function LiveAudioProvider({ children }) {
         } else startItem(item);
       } catch (failure) {
         if (!intent.current || generation !== state.generation) return;
-        if (!state.disposed && failure.status === 404) {
+        if (!state.disposed && failure.status === 409) {
+          state.queued = true;
+        } else if (!state.disposed && failure.status === 404) {
           setError(''); setStatus('waiting');
         } else if (!state.disposed && !controller.signal.aborted) {
           setError(failure.message); setStatus('error');

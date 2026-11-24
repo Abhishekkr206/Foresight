@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
-test('trigger availability is explained and enabled actions look different', async ({ page }) => {
-  await page.request.post('http://localhost:8000/api/simulation/start');
+test('trigger availability is explained and enabled actions look different', async ({ page, api }) => {
+  await api.post('/api/simulation/start');
   await page.goto('/simulation');
   const zone = page.getByLabel('Selected zone', { exact: true });
   const trigger = page.getByRole('button', { name: 'Trigger chainsaw now', exact: true });
@@ -25,10 +25,10 @@ test('trigger availability is explained and enabled actions look different', asy
   await expect(page.getByRole('button', { name: 'Listen to BEACON_07' })).toBeVisible();
 });
 
-test('chainsaw capture arrives promptly and playback survives new captures and page switches', async ({ page }) => {
+test('chainsaw capture arrives promptly and playback survives new captures and page switches', async ({ page, api }) => {
   test.setTimeout(90000);
-  await page.request.post('http://localhost:8000/api/simulation/start');
-  await expect.poll(async () => (await (await page.request.get('http://localhost:8000/api/simulation/status')).json()).worker_phase,
+  await api.post('/api/simulation/start');
+  await expect.poll(async () => (await (await api.get('/api/simulation/status')).json()).worker_phase,
     { timeout: 60000 }).toBe('ready');
   const ready = [];
   const errors = [];
@@ -80,5 +80,5 @@ test('chainsaw capture arrives promptly and playback survives new captures and p
   expect(await page.getByTestId('live-audio').evaluate((element) => element.paused)).toBe(true);
   expect(errors).toEqual([]);
   // Restore this test zone without affecting listening selection or other zones.
-  await page.request.post('http://localhost:8000/api/simulation/trigger', { data: { zone: 'zone_0_0', sound: 'ambient', duration_seconds: 10 } });
+  await api.post('/api/simulation/trigger', { data: { zone: 'zone_0_0', sound: 'ambient', duration_seconds: 10 } });
 });

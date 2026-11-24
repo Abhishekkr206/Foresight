@@ -1,0 +1,118 @@
+﻿Summary,Issue Type,Description
+FT-01 | Valid sign-in and session,Task,"Case ID: FT-01
+Requirements: FR-07
+Steps: Sign in with configured fixture credentials and call the session endpoint with the token.
+Expected: Login succeeds and the session expiry is in the future.
+Actual: Login returned 200 and session reported a future expiry.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | pytest / test_session_and_recording_require_a_valid_token"
+FT-02 | Wrong ID or password,Task,"Case ID: FT-02
+Requirements: FR-07
+Steps: Submit a wrong ID and then a wrong password.
+Expected: Both requests receive the same generic 401 response.
+Actual: Both requests returned 401 with the same credential error.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | pytest / test_session_and_recording_require_a_valid_token"
+FT-03 | Required fields,Task,"Case ID: FT-03
+Requirements: FR-07
+Steps: Check the blank browser form and submit API requests with one or both fields omitted.
+Expected: Blank browser form is invalid and omitted API fields return 422.
+Actual: Two required inputs, blank form invalid, and three API responses returned 422.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Manual check / login-screen.png"
+FT-04 | Unconfigured login,Task,"Case ID: FT-04
+Requirements: FR-07, NFR-04
+Steps: Exercise login without a signing key and request protected events while signed out.
+Expected: Login returns 503 and protected events return 401.
+Actual: Both statuses matched.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | pytest / test_login_fails_closed_when_unconfigured"
+FT-05 | Rejected session claims,Task,"Case ID: FT-05
+Requirements: NFR-04
+Steps: Run the existing session and WebSocket authorization checks with invalid and expired test tokens.
+Expected: Protected REST requests return 401 and the WebSocket closes with 4401 when authorization fails or expires.
+Actual: REST and WebSocket checks matched the expected statuses.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | pytest / test_session_and_recording_require_a_valid_token and pytest / test_websocket_requires_a_token_and_disconnects_on_expiry"
+"FT-06 | Direct route, reload, and sign-out",Task,"Case ID: FT-06
+Requirements: FR-07
+Steps: Open a protected route while signed out. Sign in, reload, and sign out.
+Expected: Requested route is restored, reload retains a valid session, and sign-out returns to login.
+Actual: The browser assertions passed.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / login.spec.js / requires login and restores a direct route after sign-in"
+FT-07 | Browser token expiry,Task,"Case ID: FT-07
+Requirements: NFR-04
+Steps: Advance the browser clock beyond the token lifetime.
+Expected: The sign-in screen appears and the stored token is cleared.
+Actual: Both checks passed.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / login.spec.js / clears the browser session when the token expires"
+FT-08 | Protected request rejection,Task,"Case ID: FT-08
+Requirements: NFR-04
+Steps: Exercise a protected request that returns 401 after login.
+Expected: The browser clears the session and shows sign-in.
+Actual: Both checks passed.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / login.spec.js / returns to login when a protected request rejects the token"
+FT-09 | Protected audio and replay,Task,"Case ID: FT-09
+Requirements: FR-05, NFR-04
+Steps: Check guest and signed-in recording access, then replay the recording in the browser.
+Expected: Guest request is denied, signed-in request succeeds, and audio advances.
+Actual: API access checks and browser playback passed.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | pytest / test_session_and_recording_require_a_valid_token and Playwright / recording.spec.js / authenticates a local event recording and plays it"
+FT-10 | Scenario capture and continuity,Task,"Case ID: FT-10
+Requirements: FR-06
+Steps: Trigger a chainsaw scenario and navigate while listening.
+Expected: Capture arrives and playback survives subsequent captures and route switches.
+Actual: The browser checks passed.
+Verdict: Pass
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / simulation-audio.spec.js / chainsaw capture arrives promptly and playback survives new captures and page switches"
+FT-11 | Forest health component,Task,"Case ID: FT-11
+Requirements: FR-04, NFR-03
+Steps: Run the health component cases for no observations and a local impact.
+Expected: The assertions uniquely identify the waiting state and zone impact.
+Actual: Two Vitest assertions found multiple matching text elements.
+Verdict: Fail
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Vitest / HealthSummary.test.jsx"
+FT-12 | Forest health display,Task,"Case ID: FT-12
+Requirements: FR-04, NFR-03
+Steps: Open the dashboard with local impact, missing audio, and partial-coverage fixtures.
+Expected: Expected headline scores or waiting state appear.
+Actual: Three browser checks could not locate the expected headline element.
+Verdict: Fail
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / forest-health.spec.js"
+FT-13 | Dashboard navigation regression,Task,"Case ID: FT-13
+Requirements: FR-04, FR-06
+Steps: Check cached navigation and navigate while the summary request hangs.
+Expected: The expected page content and controls remain visible.
+Actual: Two browser visibility assertions timed out. The separate repeated-route controls check passed.
+Verdict: Fail
+Executed: 2026-11-24
+Environment: Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Evidence: execution-evidence.txt | Playwright / navigation.spec.js"

@@ -1,0 +1,14 @@
+digraph Foresight {
+  graph [rankdir=LR, bgcolor=white, pad=0.25, nodesep=0.55, ranksep=1.45, labelloc=t, label="Foresight | Level-0 DFD", fontname="Arial", fontsize=22];
+  node [shape=box, style=filled, fontname=Arial, fontsize=14, fontcolor="#171717", fillcolor="#ffffff", color="#333333", margin="0.14,0.1"];
+  edge [fontname=Arial, fontsize=11, color="#333333", fontcolor="#171717"];
+  beacon [label="Physical beacon"];
+  sim [label="Scenario simulator"];
+  officer [label="Forest officer"];
+  system [shape=circle, label="0\nForesight", fillcolor="#ffffff", color="#222222"];
+  { rank=same; beacon; sim; }
+  beacon -> system [label="Audio and heartbeat"];
+  sim -> system [label="Simulated audio and status"];
+  officer -> system [label="Monitoring and replay requests", constraint=false];
+  system -> officer [label="Dashboard data, alerts and audio"];
+}

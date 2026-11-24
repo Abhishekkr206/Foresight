@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
+    foresight_login_id: str = ""
+    foresight_login_password: SecretStr = SecretStr("")
+    foresight_jwt_secret: SecretStr = SecretStr("")
     database_url: str = "sqlite:///./foresight.db"
     beacon_config_path: Path = ROOT / "beacons_config.json"
     uploads_dir: Path = ROOT / "uploads"

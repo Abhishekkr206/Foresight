@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { cloneElement, useState } from 'react';
 import LeafBackdrop from './LeafBackdrop';
 import Sidebar from './Sidebar';
+import { endSession } from '../services/api';
 
 export default function DashboardShell({ children, variant, sidebarHealth = 100, sidebarBeacons = [], sidebarSummary = {}, rightPanel = null, selectedBeaconId = null, onBeaconSelect = () => {}, highlightedBeaconIds = [] }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,6 +17,7 @@ export default function DashboardShell({ children, variant, sidebarHealth = 100,
     <div style={{ '--sidebar-width': sidebarOpen ? '288px' : '76px' }} className={`dashboard-shell min-h-screen ${showAssistant ? (assistantOpen ? 'assistant-open' : 'assistant-closed') : ''}`}>
       <header className="app-topbar flex h-16 items-center justify-end px-5 fixed right-0">
           <nav aria-label="Dashboard views" className="view-switch" data-view={isSimulation ? 'scenarios' : 'monitor'}><NavLink to="/dashboard" className={linkClass}><SquaresFour weight="duotone" size={14} /> Monitor</NavLink><NavLink to="/simulation" className={linkClass}><SlidersHorizontal weight="duotone" size={14} /> Scenarios</NavLink></nav>
+          <button className="pointer-events-auto ml-3 rounded-lg px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200" onClick={endSession}>Sign out</button>
       </header>
       {children}
       {showAssistant && cloneElement(rightPanel, { open: assistantOpen, onToggle: () => setAssistantOpen((value) => !value) })}

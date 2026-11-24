@@ -13,3 +13,9 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: FORESIGHT_LOGIN_ID
+        sync: false
+      - key: FORESIGHT_LOGIN_PASSWORD
+        sync: false
+      - key: FORESIGHT_JWT_SECRET
+        generateValue: true

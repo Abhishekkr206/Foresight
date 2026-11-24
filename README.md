@@ -91,6 +91,12 @@ Local development uses CLASSIFIER_BACKEND=full. Render uses the smaller LiteRT b
 
 ### Start the backend
 
+Set `FORESIGHT_LOGIN_ID` and `FORESIGHT_LOGIN_PASSWORD` in `backend/.env`.
+Set `FORESIGHT_JWT_SECRET` to a separately generated random value. Generate one
+with `python -c "import secrets; print(secrets.token_urlsafe(32))"`. On Render,
+set these variables on the backend service. The Blueprint generates the JWT secret
+for new services.
+
     cd backend
     .\.venv-yamnet\Scripts\Activate.ps1
     python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -102,6 +108,10 @@ Useful endpoints:
 - Health check: http://localhost:8000/health
 - Classifier status: http://localhost:8000/api/debug/classifier
 
+To call a protected endpoint from Swagger or another HTTP client, send the login ID
+and password to `POST /api/auth/login` and use the returned token as an
+`Authorization: Bearer <token>` header. Tokens expire after one hour.
+
 ### Start the frontend
 
 In a second terminal:
@@ -112,6 +122,8 @@ In a second terminal:
     npm run dev
 
 Open http://localhost:5173. The frontend reads the backend URL from VITE_API_URL and defaults to http://localhost:8000.
+Sign in with the backend credentials. The microphone waveform is available at
+`/debug/audio/live?beacon_id=BEACON_01` on the frontend.
 
 ## Configuration
 
@@ -256,6 +268,9 @@ Run frontend data and navigation tests from `frontend/`:
     npm run test:e2e
 
 Browser tests use installed Google Chrome and the backend at `http://localhost:8000`.
+Start the test backend with `FORESIGHT_LOGIN_ID=test-operator` and
+`FORESIGHT_LOGIN_PASSWORD=test-password`, plus a test signing secret. To use
+different test credentials, set the same ID and password in the test runner's environment.
 The browser command builds the production frontend and starts Vite Preview on port 4173
 when needed, so timings exclude development and HMR overhead. Browser tests exercise simulation
 stop/start controls; run them against a local demonstration backend.

@@ -6,6 +6,12 @@ import DashboardShell from './components/DashboardShell';
 import { LiveAudioProvider } from './hooks/useLiveAudio';
 import AssistantPanel from './components/AssistantPanel';
 import useDashboardData, { DashboardDataProvider } from './hooks/useDashboardData';
+import AuthGate from './components/AuthGate';
+import AudioDiagnosticsPage from './pages/AudioDiagnosticsPage';
+
+function DashboardRoutes() {
+  return <DashboardDataProvider><LiveAudioProvider><Layout /></LiveAudioProvider></DashboardDataProvider>;
+}
 
 function Layout() {
   const data = useDashboardData();
@@ -33,10 +39,13 @@ function Layout() {
 }
 
 export default function App() {
-  return <BrowserRouter><DashboardDataProvider><LiveAudioProvider><Routes><Route element={<Layout />}>
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-    <Route path="/dashboard" element={<></>} />
-    <Route path="/simulation" element={<></>} />
+  return <BrowserRouter><Routes><Route element={<AuthGate />}>
+    <Route path="/login" element={null} />
+    <Route path="/debug/audio/live" element={<AudioDiagnosticsPage />} />
+    <Route element={<DashboardRoutes />}>
+      <Route path="/dashboard" element={null} />
+      <Route path="/simulation" element={null} />
+    </Route>
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
-  </Route></Routes></LiveAudioProvider></DashboardDataProvider></BrowserRouter>;
+  </Route></Routes></BrowserRouter>;
 }

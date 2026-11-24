@@ -1,0 +1,29 @@
+digraph Foresight {
+  graph [rankdir=TB, bgcolor=white, pad=0.2, nodesep=0.45, ranksep=0.5, label="Foresight architecture", labelloc=t, fontname=Arial, fontsize=20];
+  node [shape=box, fontname=Arial, fontsize=13, color="#333333", margin="0.16,0.09"];
+  edge [fontname=Arial, fontsize=11, color="#333333"];
+  beacon [label="ESP32 acoustic beacon"];
+  dashboard [label="React dashboard"];
+  subgraph cluster_backend {
+    label="FastAPI service";
+    fontname=Arial;
+    color="#777777";
+    simulator [label="Scenario simulator"];
+    api [label="REST ingestion and monitoring\nWebSocket updates"];
+    pipeline [label="Audio analysis and correlation"];
+    { rank=same; simulator; api; }
+    simulator -> pipeline [label="Simulated captures"];
+    api -> pipeline [label="Beacon captures"];
+    pipeline -> api [label="Monitoring events", constraint=false];
+  }
+  db [label="SQLite or PostgreSQL\nBeacon status and event records"];
+  audio [label="Local recordings\nOptional Supabase Storage"];
+  { rank=same; beacon; dashboard; }
+  { rank=same; db; audio; }
+  beacon -> api [label="Audio and heartbeats"];
+  dashboard -> api [label="Queries and controls"];
+  api -> dashboard [label="Responses and live updates", constraint=false];
+  api -> db [label="Status and history", dir=both];
+  pipeline -> db [label="Events and correlations", dir=both];
+  pipeline -> audio [label="Qualifying recordings"];
+}

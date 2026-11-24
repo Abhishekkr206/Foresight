@@ -1,0 +1,22 @@
+digraph Foresight {
+  graph [rankdir=LR, bgcolor=white, pad=0.25, nodesep=0.3, ranksep=0.8, labelloc=t, label="Foresight | Officer use cases", fontname="Arial", fontsize=22];
+  node [fontname=Arial, fontsize=14, fontcolor="#171717"];
+  edge [dir=none, color="#333333"];
+  officer [shape=plaintext, label="Forest officer"];
+  subgraph cluster_system {
+    label="Foresight";
+    fontname="Arial";
+    color="#777777";
+    margin=18;
+    node [shape=ellipse, style=filled, color="#222222", fillcolor="#ffffff"];
+    monitor [label="Monitor forest health\nand beacon status"];
+    review [label="Review acoustic events"];
+    replay [label="Replay saved audio"];
+    simulate [label="Run a simulated scenario"];
+    login [label="Sign in", style=filled];
+    { rank=same; monitor; review; replay; simulate; login; }
+    monitor -> review -> replay -> simulate -> login [style=invis];
+  }
+  officer -> { monitor review replay simulate };
+  officer -> login;
+}

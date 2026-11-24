@@ -40,7 +40,7 @@ def capture_setup(tmp_path, monkeypatch):
     engine.dispose()
 
 
-def test_audio_is_ready_before_classification_and_capture_url_is_versioned(capture_setup, monkeypatch):
+def test_audio_is_ready_before_classification_and_capture_url_is_versioned(capture_setup, monkeypatch, sign_in):
     pipeline, storage, factory, messages = capture_setup
     checked = []
     def classify(*args, **kwargs):
@@ -65,6 +65,7 @@ def test_audio_is_ready_before_classification_and_capture_url_is_versioned(captu
     monkeypatch.setattr(main.app.state, 'simulator', Simulator(main.settings, factory, pipeline))
     monkeypatch.setattr(main.settings, 'enable_simulation', False)
     with TestClient(main.app) as client:
+        sign_in(client)
         meta = client.get('/api/debug/audio/latest/meta?beacon_id=TEST').json()
         assert meta['scenario_id'] == 'scenario-one'
         assert meta['received_at'].endswith('+00:00')
@@ -222,7 +223,7 @@ def test_finishing_an_old_capture_cannot_overwrite_new_capture_metadata(capture_
     assert latest['sound_class'] == 'Chainsaw'
 
 
-def test_trigger_api_rejects_unavailable_targets_and_acknowledges_ambient(capture_setup, monkeypatch):
+def test_trigger_api_rejects_unavailable_targets_and_acknowledges_ambient(capture_setup, monkeypatch, sign_in):
     pipeline, storage, factory, messages = capture_setup
     monkeypatch.setattr(main, 'pipeline', pipeline)
     monkeypatch.setattr(main, 'storage', storage)
@@ -231,6 +232,7 @@ def test_trigger_api_rejects_unavailable_targets_and_acknowledges_ambient(captur
     monkeypatch.setattr(main.app.state, 'simulator', Simulator(main.settings, factory, pipeline))
     monkeypatch.setattr(main.settings, 'enable_simulation', False)
     with TestClient(main.app) as client:
+        sign_in(client)
         monkeypatch.setattr(main.settings, 'enable_simulation', True)
         payload = {'zone': 'zone_0_0', 'sound': 'chainsaw', 'duration_seconds': 10}
         stopped = client.post('/api/simulation/trigger', json=payload)

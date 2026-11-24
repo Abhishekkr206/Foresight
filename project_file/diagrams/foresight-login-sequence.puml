@@ -1,0 +1,38 @@
+@startuml
+title Foresight | Officer sign-in
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+hide footbox
+actor "Forest officer" as Officer
+participant "Sign-in page" as UI
+participant "FastAPI" as API
+participant "Server configuration" as Settings
+Officer -> UI : Submit login ID and password
+UI -> API : POST /api/auth/login
+API -> Settings : Read configured login and signing key
+Settings --> API : Server-side settings
+alt Login configuration incomplete
+  API --> UI : 503 / Login is not configured
+else Configuration valid
+  API -> API : Compare both submitted credentials
+  alt Either credential differs
+    API --> UI : 401 / Invalid login ID or password
+  else Both credentials match
+    API --> UI : 200 / One-hour bearer JWT
+    UI -> UI : Store token in sessionStorage
+    UI --> Officer : Restore requested route
+    opt Same tab reloads with a stored token
+      UI -> API : GET /api/auth/session with bearer token
+      alt Token valid
+        API --> UI : 200 / Expiration time
+        UI --> Officer : Restore session
+      else Token invalid or expired
+        API --> UI : 401 / Sign in to continue
+        UI -> UI : Clear stored token
+        UI --> Officer : Show sign-in page
+      end
+    end
+  end
+end
+@enduml

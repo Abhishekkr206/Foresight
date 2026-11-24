@@ -3,13 +3,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Link, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import useDashboardData, { DashboardDataProvider } from './useDashboardData';
-import { getJson } from '../services/api';
+import { getJson, setToken } from '../services/api';
 
 let sockets;
 let pending;
 const beacons = [{ beacon_id: 'BEACON_02', latitude: -4, longitude: -55, is_real_hardware: false }];
 class Socket {
   constructor() { sockets.push(this); this.closed = false; }
+  send = vi.fn();
   close() { this.closed = true; this.onclose?.(); }
   message() { this.onmessage?.({ data: JSON.stringify({ type: 'event.created', data: { beacon_id: 'BEACON_02' } }) }); }
 }
@@ -40,6 +41,7 @@ function mount(path = '/dashboard') {
 }
 beforeEach(() => {
   vi.useFakeTimers(); sockets = []; pending = new Map();
+  setToken('test-token');
   vi.stubGlobal('WebSocket', Socket);
   vi.stubGlobal('fetch', vi.fn((url, options = {}) => {
     const path = new URL(url).pathname;
@@ -51,7 +53,7 @@ beforeEach(() => {
     return Promise.resolve({ ok: true, json: async () => body });
   }));
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+afterEach(() => { cleanup(); sessionStorage.clear(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe('shared route data', () => {
   it('sends bounded conversation history and selection, and clears history for a new chat', async () => {
@@ -155,7 +157,11 @@ describe('shared route data', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     expect(sockets.filter((socket) => !socket.closed)).toHaveLength(1);
     const count = fetch.mock.calls.length;
-    act(() => sockets.find((socket) => !socket.closed).onopen()); await flush();
+    const socket = sockets.find((item) => !item.closed);
+    act(() => socket.onopen());
+    expect(socket.send).toHaveBeenCalledWith('test-token');
+    expect(fetch.mock.calls.length).toBe(count);
+    act(() => socket.onmessage({ data: JSON.stringify({ type: 'auth.ready' }) })); await flush();
     expect(fetch.mock.calls.length).toBeGreaterThan(count);
     view.unmount();
     expect(sockets.every((socket) => socket.closed)).toBe(true);

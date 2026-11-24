@@ -1,0 +1,114 @@
+Foresight Phase 4 execution evidence | 2026-11-24
+Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Backend: 63 passed; one warning. Frontend: 25 passed, 2 failed. Browser: 9 passed, 5 failed.
+Manual omitted-fields checks: 422, 422, 422. Blank UI form invalid.
+
+PYTEST
+Pass | test_acoustic_normalization_is_clamped_per_beacon
+Pass | test_ambiguous_followups_clarify_and_controls_remain_read_only
+Pass | test_api_and_assistant_share_scores_and_coverage[False]
+Pass | test_api_and_assistant_share_scores_and_coverage[True]
+Pass | test_audio_ingestion_creates_event
+Pass | test_audio_is_ready_before_classification_and_capture_url_is_versioned
+Pass | test_authentication_failure_is_cached_and_status_never_calls_provider
+Pass | test_confident_threat_passes_gate
+Pass | test_dense_zones_do_not_have_extra_weight
+Pass | test_duplicate_beacons_do_not_duplicate_a_zone_penalty
+Pass | test_explicit_simulation_chainsaw_remains_deterministic
+Pass | test_failed_cloud_upload_retains_local_url
+Pass | test_finishing_an_old_capture_cannot_overwrite_new_capture_metadata
+Pass | test_followup_refreshes_data_instead_of_repeating_old_claims
+Pass | test_fusion_combines_threat_and_aci_drop
+Pass | test_gemini_manual_tool_roles_structured_reply_and_identifier_validation
+Pass | test_health_and_seeded_beacons
+Pass | test_health_window_and_threat_window_have_distinct_boundaries
+Pass | test_heartbeat_derives_active_state
+Pass | test_historical_events_are_distinct_from_current_threats
+Pass | test_lite_interpreter_is_serialized_across_capture_threads
+Pass | test_login_fails_closed_when_unconfigured
+Pass | test_low_confidence_threat_is_neutral
+Pass | test_missing_audio_is_not_reported_as_safe
+Pass | test_new_normal_reading_and_id_tie_break_clear_previous_threat
+Pass | test_no_recent_audio_is_not_a_zero_or_perfect_score
+Pass | test_original_typo_and_followup_conversation[False]
+Pass | test_original_typo_and_followup_conversation[True]
+Pass | test_overall_provider_deadline_enforced
+Pass | test_penalties_scale_with_affected_zones[0]
+Pass | test_penalties_scale_with_affected_zones[1]
+Pass | test_penalties_scale_with_affected_zones[2]
+Pass | test_penalties_scale_with_affected_zones[8]
+Pass | test_penalty_reports_effective_percentage_points_after_clamping
+Pass | test_provider_failures_have_safe_fallback_metadata[error0-invalid_credentials]
+Pass | test_provider_failures_have_safe_fallback_metadata[error1-quota_exceeded]
+Pass | test_provider_failures_have_safe_fallback_metadata[error2-unsupported_model]
+Pass | test_provider_failures_have_safe_fallback_metadata[error3-timeout]
+Pass | test_provider_failures_have_safe_fallback_metadata[error4-invalid_response]
+Pass | test_provider_failures_have_safe_fallback_metadata[error5-provider_error]
+Pass | test_queued_duration_does_not_elapse_during_warmup_and_newest_trigger_wins
+Pass | test_request_history_is_optional_but_bounded
+Pass | test_selected_zone_and_all_configured_beacons_are_supported
+Pass | test_session_and_recording_require_a_valid_token
+Pass | test_short_impulse_can_be_gunshot
+Pass | test_slow_cloud_upload_does_not_delay_local_event_or_audio
+Pass | test_slow_worker_keeps_health_responsive_and_stop_waits
+Pass | test_summary_active_threat_timeout[44-1]
+Pass | test_summary_active_threat_timeout[45-1]
+Pass | test_summary_active_threat_timeout[46-0]
+Pass | test_summary_and_event_detail_endpoints
+Pass | test_summary_empty_and_historical_defaults
+Pass | test_summary_large_history
+Pass | test_summary_latest_event_wins_timestamp_ties
+Pass | test_summary_utc_midnight
+Pass | test_sustained_loud_chainsaw_like_audio_is_not_gunshot
+Pass | test_threat_score_uses_weighted_confidence
+Pass | test_trigger_api_rejects_unavailable_targets_and_acknowledges_ambient
+Pass | test_trigger_wakes_worker_expires_exactly_and_resets_to_ambient
+Pass | test_unobserved_and_empty_zones_are_not_counted_as_healthy
+Pass | test_websocket_requires_a_token_and_disconnects_on_expiry
+Pass | test_worker_failure_does_not_skip_next_beacon
+Pass | test_zone_max_boundary_is_inside_grid
+
+VITEST
+Pass | AssistantPanel.test.jsx | shows Foresight AI branding without connection labels or repeated banners
+Pass | AssistantPanel.test.jsx | submits Enter while preserving Shift+Enter and IME composition
+Pass | AssistantPanel.test.jsx | keeps a scrolled-up reader in place and offers a jump to the new reply
+Pass | AssistantPanel.test.jsx | provides a new-chat action and an accessible pending state
+Pass | HealthSummary.test.jsx | formats a real zero, a fractional score, and missing data distinctly
+Pass | HealthSummary.test.jsx | shows only monitored count and an active zone alert
+Pass | HealthSummary.test.jsx | only shows a coverage warning when reporting is incomplete
+Fail | HealthSummary.test.jsx | does not claim a healthy soundscape when there are no observations
+Fail | HealthSummary.test.jsx | uses the same fractional score and locality explanation in the sidebar
+Pass | useDashboardData.test.jsx | sends bounded conversation history and selection, and clears history for a new chat
+Pass | useDashboardData.test.jsx | confirms a scenario only for its matching scenario ID and affected beacon
+Pass | useDashboardData.test.jsx | preserves cached data and selections through repeated navigation with one live socket
+Pass | useDashboardData.test.jsx | does not fetch events or ACI on an initial simulation visit
+Pass | useDashboardData.test.jsx | keeps other data and navigation usable when summary times out, then retries
+Pass | useDashboardData.test.jsx | coalesces websocket bursts and queues only one follow-up per pending resource
+Pass | useDashboardData.test.jsx | reconnects after socket loss and cleans up timers on unmount
+Pass | useDashboardData.test.jsx | discards an obsolete event request when leaving the dashboard
+Pass | useDashboardData.test.jsx | retains timeout protection until the response body has loaded
+Pass | useLiveAudio.test.jsx | keeps one audio element and playback position across page changes
+Pass | useLiveAudio.test.jsx | does not restart duplicate captures from the same scenario
+Pass | useLiveAudio.test.jsx | immediately fetches a changed scenario and respects expiry
+Pass | useLiveAudio.test.jsx | manual pause survives route changes and incoming audio messages
+Pass | useLiveAudio.test.jsx | retains only the newest pending hardware capture until the current clip ends
+Pass | useLiveAudio.test.jsx | recovers from a replaced capture and uses polling when websocket updates are missing
+Pass | useLiveAudio.test.jsx | pauses live playback for event replay and releases resources on unmount
+Pass | useLiveAudio.test.jsx | exposes a manual Play state if browser autoplay is denied
+Pass | useLiveAudio.test.jsx | does not overwrite an explicit pause when an in-flight download is aborted
+
+PLAYWRIGHT
+Pass | assistant.spec.js | the original typo and follow-up conversation identifies a live threatened zone
+Pass | assistant.spec.js | long conversations scroll inside the panel and keep the composer visible at smaller widths
+Fail | forest-health.spec.js | a local incident shows the main score and one concise alert
+Fail | forest-health.spec.js | missing audio produces no headline health estimate
+Fail | forest-health.spec.js | partial coverage remains visible beside the current health estimate
+Pass | login.spec.js | requires login and restores a direct route after sign-in
+Pass | login.spec.js | clears the browser session when the token expires
+Pass | login.spec.js | returns to login when a protected request rejects the token
+Fail | navigation.spec.js | cached navigation is immediate and preserves shell and controls
+Fail | navigation.spec.js | a hanging summary cannot block navigation or other content
+Pass | navigation.spec.js | scenario controls remain usable after repeated route switches
+Pass | recording.spec.js | authenticates a local event recording and plays it
+Pass | simulation-audio.spec.js | trigger availability is explained and enabled actions look different
+Pass | simulation-audio.spec.js | chainsaw capture arrives promptly and playback survives new captures and page switches

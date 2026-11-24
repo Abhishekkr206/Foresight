@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 function summary(overrides = {}) {
   return { beacon_count: 9, active_beacon_count: 9, confirmed_events_today: 0,
