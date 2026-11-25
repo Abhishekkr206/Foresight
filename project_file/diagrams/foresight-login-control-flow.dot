@@ -1,0 +1,32 @@
+digraph Login {
+  graph [rankdir=TB, bgcolor=white, pad=0.2, ranksep=0.28, nodesep=0.32, fontname=Arial, label="Officer login | Control-flow graph", labelloc=t, fontsize=19];
+  node [shape=box, fontname=Arial, fontsize=12, color="#333333", margin="0.12,0.07"];
+  edge [fontname=Arial, fontsize=10, color="#333333"];
+  start [shape=ellipse,label="Enter login handler"];
+  d1 [shape=diamond,label="D1: Configured ID present?"];
+  d2 [shape=diamond,label="D2: Configured password present?"];
+  d3 [shape=diamond,label="D3: Signing key at least 32 bytes?"];
+  compare [label="Compute both credential comparisons"];
+  d4 [shape=diamond,label="D4: ID matches?"];
+  d5 [shape=diamond,label="D5: Password matches?"];
+  unavailable [label="503 | Login unconfigured"];
+  denied [label="401 | Invalid credentials"];
+  issue [label="200 | Issue one-hour JWT"];
+  exit [shape=ellipse,label="Exit"];
+  start -> d1;
+  d1 -> d2 [label="Yes"];
+  d2 -> d3 [label="Yes"];
+  d3 -> compare [label="Yes"];
+  compare -> d4;
+  d4 -> d5 [label="Yes"];
+  d5 -> issue [label="Yes"];
+  d1 -> unavailable [label="No"];
+  d2 -> unavailable [label="No"];
+  d3 -> unavailable [label="No"];
+  d4 -> denied [label="No"];
+  d5 -> denied [label="No"];
+  { rank=same; unavailable; denied; issue; }
+  unavailable -> exit;
+  denied -> exit;
+  issue -> exit;
+}

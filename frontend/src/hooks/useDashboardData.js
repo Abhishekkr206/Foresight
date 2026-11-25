@@ -1,7 +1,7 @@
 import { createContext, createElement, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { API, BOUNDS, THREAT_THRESHOLD } from '../config/constants';
-import { getJson } from '../services/api';
+import { endSession, getJson, getToken } from '../services/api';
 
 const DashboardContext = createContext(null);
 
@@ -129,13 +129,16 @@ function useSharedDashboardData() {
       socket = new WebSocket(API.replace(/^http/, 'ws') + '/ws');
       socket.onopen = () => {
         if (disposed) return;
-        setConnected(true);
-        delay = 1000;
-        refreshRef.current();
+        const accessToken = getToken();
+        if (accessToken) socket.send(accessToken);
       };
-      socket.onclose = () => {
+      socket.onclose = ({ code } = {}) => {
         if (disposed) return;
         setConnected(false);
+        if (code === 4401) {
+          endSession();
+          return;
+        }
         reconnectTimer = window.setTimeout(connect, delay);
         delay = Math.min(30000, delay * 2);
       };
@@ -144,6 +147,12 @@ function useSharedDashboardData() {
         if (disposed) return;
         try {
           const payload = JSON.parse(message.data);
+          if (payload.type === 'auth.ready') {
+            setConnected(true);
+            delay = 1000;
+            refreshRef.current();
+            return;
+          }
           if (payload.type === 'audio.ready') {
             window.dispatchEvent(new CustomEvent('foresight:audio-ready', { detail: payload.data }));
             return;

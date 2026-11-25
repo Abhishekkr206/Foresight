@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="350" viewBox="0 0 1120 350" role="img" aria-labelledby="title">
+<title id="title">Foresight repository activity timeline</title>
+<rect width="1120" height="350" fill="#fff"/>
+<g font-family="Arial, sans-serif">
+<text x="35.00" y="52" text-anchor="start" font-size="30" font-weight="700" fill="#171717">Foresight | Project timeline</text>
+<text x="36.00" y="81" text-anchor="start" font-size="17" font-weight="400" fill="#333333">Documented Git activity · 2026</text>
+<path d="M36 114H1056" stroke="#d4d4d4" stroke-width="1"/>
+<path d="M36 176H1056" stroke="#d4d4d4" stroke-width="1"/>
+<path d="M36 238H1056" stroke="#d4d4d4" stroke-width="1"/>
+<path d="M36 300H1056" stroke="#d4d4d4" stroke-width="1"/>
+<path d="M360.00 114V300" stroke="#d4d4d4" stroke-width="1"/>
+<text x="360.00" y="326" text-anchor="start" font-size="15" font-weight="400" fill="#333333">29 Aug</text>
+<path d="M624.00 114V300" stroke="#d4d4d4" stroke-width="1"/>
+<text x="624.00" y="326" text-anchor="middle" font-size="15" font-weight="400" fill="#333333">1 Oct</text>
+<path d="M872.00 114V300" stroke="#d4d4d4" stroke-width="1"/>
+<text x="872.00" y="326" text-anchor="middle" font-size="15" font-weight="400" fill="#333333">1 Nov</text>
+<path d="M1056.00 114V300" stroke="#d4d4d4" stroke-width="1"/>
+<text x="1056.00" y="326" text-anchor="end" font-size="15" font-weight="400" fill="#333333">23 Nov</text>
+<text x="36.00" y="140" text-anchor="start" font-size="20" font-weight="700" fill="#171717">Initial MVP and firmware</text>
+<text x="36.00" y="162" text-anchor="start" font-size="16" font-weight="400" fill="#333333">29–30 Aug</text>
+<rect x="360.00" y="134" width="16.00" height="22" rx="3" fill="#222222"/>
+<text x="36.00" y="202" text-anchor="start" font-size="20" font-weight="700" fill="#171717">Deployment and playback</text>
+<text x="36.00" y="224" text-anchor="start" font-size="16" font-weight="400" fill="#333333">31 Aug–2 Sep</text>
+<rect x="376.00" y="196" width="24.00" height="22" rx="3" fill="#222222"/>
+<text x="36.00" y="264" text-anchor="start" font-size="20" font-weight="700" fill="#171717">Monitoring and dashboard</text>
+<text x="36.00" y="286" text-anchor="start" font-size="16" font-weight="400" fill="#333333">22–23 Nov</text>
+<rect x="1040.00" y="258" width="16.00" height="22" rx="3" fill="#222222"/>
+</g>
+</svg>

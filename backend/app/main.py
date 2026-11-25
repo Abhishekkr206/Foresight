@@ -3,15 +3,16 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 import json
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import FileResponse, Response
 import numpy as np
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from .assistant import AssistantRequest, AssistantResponse, answer_query, assistant_status
 from .audio import classifier_status
+from .auth import AppSettings, router as auth_router, require_session, verify_token
 from .config import get_settings
 from .health import get_forest_summary
 from .db import Base, SessionLocal, engine, get_db
@@ -99,6 +100,8 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+app.include_router(auth_router)
+protected = APIRouter(dependencies=[Depends(require_session)])
 storage = AudioStorage(settings)
 pipeline = Pipeline(settings, storage, broadcast)
 app.state.simulator = Simulator(settings, SessionLocal, pipeline)
@@ -109,12 +112,12 @@ def health():
     return {'status': 'ok', 'service': 'foresight-api'}
 
 
-@app.get('/api/debug/classifier')
+@protected.get('/api/debug/classifier')
 def debug_classifier():
     return classifier_status()
 
 
-@app.get('/api/beacons', response_model=list[BeaconOut])
+@protected.get('/api/beacons', response_model=list[BeaconOut])
 def beacons(db: Session = Depends(get_db)):
     return db.scalars(select(Beacon).order_by(Beacon.beacon_id)).all()
 
@@ -157,7 +160,7 @@ async def ingest_audio(beacon_id: str, audio: UploadFile = File(...)):
     return await asyncio.to_thread(_process_uploaded_audio, beacon_id, data, audio.filename or 'capture.wav', audio.content_type or 'audio/wav')
 
 
-@app.get('/api/debug/audio/latest')
+@protected.get('/api/debug/audio/latest')
 def latest_debug_audio(beacon_id: str = 'BEACON_01', capture_id: str | None = None):
     capture = pipeline.latest_audio(beacon_id)
     if capture is None:
@@ -171,7 +174,7 @@ def latest_debug_audio(beacon_id: str = 'BEACON_01', capture_id: str | None = No
     )
 
 
-@app.get('/api/debug/audio/latest/meta')
+@protected.get('/api/debug/audio/latest/meta')
 def latest_debug_audio_meta(beacon_id: str = 'BEACON_01'):
     capture = pipeline.latest_audio(beacon_id)
     if capture is None:
@@ -199,7 +202,7 @@ def latest_debug_audio_meta(beacon_id: str = 'BEACON_01'):
         'yamnet_loaded': capture.get('yamnet_loaded', False),
     }
 
-@app.get('/api/debug/audio/latest/waveform')
+@protected.get('/api/debug/audio/latest/waveform')
 def latest_debug_waveform(beacon_id: str = 'BEACON_01', points: int = Query(1000, ge=32, le=5000)):
     capture = pipeline.latest_audio(beacon_id)
     if capture is None:
@@ -226,33 +229,7 @@ def latest_debug_waveform(beacon_id: str = 'BEACON_01', points: int = Query(1000
     }
 
 
-@app.get('/api/debug/audio/live', response_class=HTMLResponse)
-def live_debug_waveform(beacon_id: str = 'BEACON_01'):
-    """A lightweight browser waveform monitor for the latest beacon capture."""
-    safe_beacon_id = beacon_id.replace('"', '')
-    return HTMLResponse(f'''<!doctype html>
-<html><head><meta charset="utf-8"><title>Foresight microphone waveform</title>
-<style>body{{font:16px system-ui;background:#f7f5ed;color:#24352a;margin:24px}}svg{{width:100%;height:360px;background:#fff;border:1px solid #cbd5c0;border-radius:12px}}#status{{margin:12px 0;color:#53665a}}code{{background:#e9eee5;padding:2px 5px;border-radius:4px}}</style></head>
-<body><h2>Microphone waveform: <code>{safe_beacon_id}</code></h2><div id="status">Waiting for a capture…</div>
-<svg id="plot" viewBox="0 0 1200 360" preserveAspectRatio="none"><path id="line" fill="none" stroke="#477a52" stroke-width="2"/></svg>
-<script>
-const beacon = {safe_beacon_id!r};
-async function update() {{
-  try {{
-    const r = await fetch('/api/debug/audio/latest/waveform?beacon_id=' + encodeURIComponent(beacon) + '&points=1200');
-    if (!r.ok) throw new Error('waiting for audio');
-    const d = await r.json();
-    if (!d.available) {{ document.getElementById('status').textContent = d.message; return; }}
-    const v = d.values; const path = v.map((x,i) => (i ? 'L' : 'M') + ' ' + (i * 1200 / Math.max(1,v.length-1)).toFixed(1) + ' ' + (180 - x * 155).toFixed(1)).join(' ');
-    document.getElementById('line').setAttribute('d', path);
-    document.getElementById('status').textContent = `${{d.duration_seconds}} s | RMS ${{d.rms.toFixed(4)}} | peak ${{d.peak.toFixed(4)}} | received ${{d.received_at}}`;
-  }} catch (e) {{ document.getElementById('status').textContent = 'Waiting for the next audio capture…'; }}
-}}
-update(); setInterval(update, 1000);
-</script></body></html>''')
-
-
-@app.get('/api/events', response_model=list[EventOut])
+@protected.get('/api/events', response_model=list[EventOut])
 def events(limit: int = Query(100, ge=1, le=500), beacon_id: str | None = None, confirmed: bool | None = None, min_final_score: float | None = Query(None, ge=0, le=1), max_final_score: float | None = Query(None, ge=0, le=1), sound_class: str | None = None, start_time: datetime | None = None, end_time: datetime | None = None, db: Session = Depends(get_db)):
     query = select(Event).order_by(desc(Event.timestamp)).limit(limit)
     if beacon_id: query = query.where(Event.beacon_id == beacon_id)
@@ -265,7 +242,7 @@ def events(limit: int = Query(100, ge=1, le=500), beacon_id: str | None = None, 
     return db.scalars(query).all()
 
 
-@app.get('/api/events/{event_id}')
+@protected.get('/api/events/{event_id}')
 def event_detail(event_id: int, db: Session = Depends(get_db)):
     event = db.get(Event, event_id)
     if event is None: raise HTTPException(404, 'event not found')
@@ -273,7 +250,7 @@ def event_detail(event_id: int, db: Session = Depends(get_db)):
     return {'event': EventOut.model_validate(event).model_dump(mode='json'), 'beacon': BeaconOut.model_validate(beacon).model_dump(mode='json') if beacon else None}
 
 
-@app.get('/api/events/{event_id}/correlation')
+@protected.get('/api/events/{event_id}/correlation')
 def event_correlation(event_id: int, db: Session = Depends(get_db)):
     correlations = db.scalars(select(Correlation).order_by(desc(Correlation.timestamp))).all()
     correlation = next((item for item in correlations if event_id in (item.event_ids or [])), None)
@@ -284,12 +261,12 @@ def event_correlation(event_id: int, db: Session = Depends(get_db)):
     return {'correlation': CorrelationOut.model_validate(correlation).model_dump(mode='json'), 'events': [EventOut.model_validate(item).model_dump(mode='json') for item in related], 'beacons': [BeaconOut.model_validate(item).model_dump(mode='json') for item in related_beacons]}
 
 
-@app.get('/api/summary')
+@protected.get('/api/summary')
 def summary(db: Session = Depends(get_db)):
     return get_forest_summary(db, settings, now=datetime.now(timezone.utc))
 
 
-@app.get('/api/status', response_model=list[StatusOut])
+@protected.get('/api/status', response_model=list[StatusOut])
 def statuses(beacon_id: str | None = None, db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
     query = select(BeaconStatus)
@@ -297,38 +274,38 @@ def statuses(beacon_id: str | None = None, db: Session = Depends(get_db)):
     return [StatusOut(beacon_id=item.beacon_id, last_seen=item.last_seen, battery_percentage=item.battery_percentage, active=now - as_utc(item.last_seen) <= timedelta(seconds=settings.heartbeat_timeout_seconds)) for item in db.scalars(query).all()]
 
 
-@app.get('/api/aci')
+@protected.get('/api/aci')
 def aci(beacon_id: str | None = None, limit: int = Query(100, ge=1, le=500), db: Session = Depends(get_db)):
     query = select(Event).order_by(desc(Event.timestamp)).limit(limit)
     if beacon_id: query = query.where(Event.beacon_id == beacon_id)
     return [{'beacon_id': event.beacon_id, 'timestamp': event.timestamp, 'aci_value': event.aci_value} for event in db.scalars(query).all()]
 
 
-@app.get('/uploads/{filename}')
+@protected.get('/uploads/{filename}')
 def uploaded_file(filename: str):
     path = settings.uploads_dir / filename
     if not path.is_file() or path.parent != settings.uploads_dir: raise HTTPException(404, 'audio not found')
     return FileResponse(path)
 
 
-@app.post('/api/simulation/start')
+@protected.post('/api/simulation/start')
 async def start_simulation():
     if not settings.enable_simulation: raise HTTPException(404, 'simulation disabled')
     app.state.simulator.start(); result = app.state.simulator.status(); broadcast({'type': 'simulation.status', 'data': result}); return result
 
 
-@app.get('/api/simulation/status')
+@protected.get('/api/simulation/status')
 def simulation_status():
     if not settings.enable_simulation: return {'running': False, 'zones': {}}
     return app.state.simulator.status()
 
 
-@app.post('/api/simulation/stop')
+@protected.post('/api/simulation/stop')
 async def stop_simulation():
     await app.state.simulator.stop(); result = app.state.simulator.status(); broadcast({'type': 'simulation.status', 'data': result}); return result
 
 
-@app.post('/api/simulation/trigger')
+@protected.post('/api/simulation/trigger')
 async def trigger_simulation(payload: SimulationTrigger):
     if not settings.enable_simulation: raise HTTPException(404, 'simulation disabled')
     locations = await asyncio.to_thread(app.state.simulator._beacon_locations)
@@ -340,34 +317,55 @@ async def trigger_simulation(payload: SimulationTrigger):
     return result
 
 
-@app.get('/api/query/events', response_model=list[EventOut])
+@protected.get('/api/query/events', response_model=list[EventOut])
 def safe_events(threat_score_min: float | None = Query(None, ge=0, le=1), threat_score_max: float | None = Query(None, ge=0, le=1), beacon_id: str | None = None, confirmed: bool | None = None, start_time: datetime | None = None, end_time: datetime | None = None, limit: int = Query(100, ge=1, le=500), db: Session = Depends(get_db)):
     return safe_query_events(db, threat_score_min=threat_score_min, threat_score_max=threat_score_max, beacon_id=beacon_id, confirmed=confirmed, start_time=start_time, end_time=end_time, limit=limit)
 
 
-@app.get('/api/query/status')
+@protected.get('/api/query/status')
 def safe_status(beacon_id: str | None = None, db: Session = Depends(get_db)):
     return safe_get_beacon_status(db, settings, beacon_id)
 
 
-@app.get('/api/query/aci')
+@protected.get('/api/query/aci')
 def safe_aci(beacon_id: str, time_range: str = '24h', db: Session = Depends(get_db)):
     return safe_get_aci_trend(db, beacon_id, time_range)
 
 
-@app.get('/api/assistant/status')
+@protected.get('/api/assistant/status')
 def get_assistant_status():
     return assistant_status(settings)
 
 
-@app.post('/api/assistant/query', response_model=AssistantResponse)
+@protected.post('/api/assistant/query', response_model=AssistantResponse)
 def assistant_query(payload: AssistantRequest, db: Session = Depends(get_db)):
     return answer_query(payload.prompt, db, settings, history=payload.history, selection=payload.selection.model_dump(exclude_none=True))
 
 
+app.include_router(protected)
+
+
 @app.websocket('/ws')
-async def websocket(websocket: WebSocket):
-    await websocket.accept(); clients.add(websocket)
+async def websocket(websocket: WebSocket, auth_settings: AppSettings):
+    await websocket.accept()
     try:
-        while True: await websocket.receive_text()
-    except WebSocketDisconnect: clients.discard(websocket)
+        try:
+            token = await asyncio.wait_for(websocket.receive_text(), timeout=5)
+            expiry = verify_token(token, auth_settings)
+        except (HTTPException, TimeoutError, KeyError):
+            await websocket.close(code=4401)
+            return
+
+        remaining = expiry - datetime.now(timezone.utc).timestamp()
+        async with asyncio.timeout(max(0, remaining)):
+            await websocket.send_json({'type': 'auth.ready'})
+            clients.add(websocket)
+            while True:
+                await websocket.receive_text()
+    except TimeoutError:
+        clients.discard(websocket)
+        await websocket.close(code=4401)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        clients.discard(websocket)

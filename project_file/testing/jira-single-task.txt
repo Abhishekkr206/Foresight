@@ -1,0 +1,18 @@
+Foresight Phase 4 testing
+Executed: 2026-11-24
+Windows, local FastAPI with isolated SQLite, Vite production preview, headless Chrome, test-only login
+Suite totals: pytest 63/63; Vitest 25/27; Playwright 9/14.
+
+FT-01 | Pass | Valid sign-in and session | Expected: Login succeeds and the session expiry is in the future. Actual: Login returned 200 and session reported a future expiry.
+FT-02 | Pass | Wrong ID or password | Expected: Both requests receive the same generic 401 response. Actual: Both requests returned 401 with the same credential error.
+FT-03 | Pass | Required fields | Expected: Blank browser form is invalid and omitted API fields return 422. Actual: Two required inputs, blank form invalid, and three API responses returned 422.
+FT-04 | Pass | Unconfigured login | Expected: Login returns 503 and protected events return 401. Actual: Both statuses matched.
+FT-05 | Pass | Rejected session claims | Expected: Protected REST requests return 401 and the WebSocket closes with 4401 when authorization fails or expires. Actual: REST and WebSocket checks matched the expected statuses.
+FT-06 | Pass | Direct route, reload, and sign-out | Expected: Requested route is restored, reload retains a valid session, and sign-out returns to login. Actual: The browser assertions passed.
+FT-07 | Pass | Browser token expiry | Expected: The sign-in screen appears and the stored token is cleared. Actual: Both checks passed.
+FT-08 | Pass | Protected request rejection | Expected: The browser clears the session and shows sign-in. Actual: Both checks passed.
+FT-09 | Pass | Protected audio and replay | Expected: Guest request is denied, signed-in request succeeds, and audio advances. Actual: API access checks and browser playback passed.
+FT-10 | Pass | Scenario capture and continuity | Expected: Capture arrives and playback survives subsequent captures and route switches. Actual: The browser checks passed.
+FT-11 | Fail | Forest health component | Expected: The assertions uniquely identify the waiting state and zone impact. Actual: Two Vitest assertions found multiple matching text elements.
+FT-12 | Fail | Forest health display | Expected: Expected headline scores or waiting state appear. Actual: Three browser checks could not locate the expected headline element.
+FT-13 | Fail | Dashboard navigation regression | Expected: The expected page content and controls remain visible. Actual: Two browser visibility assertions timed out. The separate repeated-route controls check passed.

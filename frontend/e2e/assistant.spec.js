@@ -1,13 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
-test('the original typo and follow-up conversation identifies a live threatened zone', async ({ page }) => {
+test('the original typo and follow-up conversation identifies a live threatened zone', async ({ page, api }) => {
   test.setTimeout(120000);
-  await page.request.post('http://localhost:8000/api/simulation/start');
-  await expect.poll(async () => (await (await page.request.get('http://localhost:8000/api/simulation/status')).json()).worker_phase,
+  await api.post('/api/simulation/start');
+  await expect.poll(async () => (await (await api.get('/api/simulation/status')).json()).worker_phase,
     { timeout:60000 }).toBe('ready');
-  const response = await page.request.post('http://localhost:8000/api/simulation/trigger', { data:{ zone:'zone_0_0', sound:'chainsaw', duration_seconds:60 } });
+  const response = await api.post('/api/simulation/trigger', { data:{ zone:'zone_0_0', sound:'chainsaw', duration_seconds:60 } });
   expect(response.ok()).toBe(true);
-  await expect.poll(async () => (await (await page.request.get('http://localhost:8000/api/simulation/status')).json()).zones.zone_0_0.phase).toBe('detected');
+  await expect.poll(async () => (await (await api.get('/api/simulation/status')).json()).zones.zone_0_0.phase).toBe('detected');
   try {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
@@ -47,7 +47,7 @@ test('the original typo and follow-up conversation identifies a live threatened 
     await expect(page.getByRole('log')).not.toContainText('which zone?');
     expect(errors).toEqual([]);
   } finally {
-    await page.request.post('http://localhost:8000/api/simulation/trigger', { data:{ zone:'zone_0_0',sound:'ambient',duration_seconds:10 } });
+    await api.post('/api/simulation/trigger', { data:{ zone:'zone_0_0',sound:'ambient',duration_seconds:10 } });
   }
 });
 

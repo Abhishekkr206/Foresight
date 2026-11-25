@@ -1,0 +1,24 @@
+digraph Signal {
+  graph [rankdir=TB, bgcolor=white, pad=0.2, nodesep=0.8, ranksep=0.36, label="Beacon signal processing", labelloc=t, fontname=Arial, fontsize=20];
+  node [shape=box, fontname=Arial, fontsize=13, color="#333333", margin="0.16,0.09"];
+  edge [fontname=Arial, fontsize=11, color="#333333"];
+  input [label="Signed 32-bit I2S microphone samples"];
+  shift [label="Shift right by 16 bits"];
+  gate [label="Zero values below the fixed noise floor"];
+  gain [label="Apply gain and clamp to signed 16-bit PCM"];
+  queue [label="Queue PCM chunks for network task"];
+  upload [label="Send 16 kHz mono WAV"];
+  peak [label="Select the signed peak for each display column"];
+  floor [label="Zero peaks below the fixed noise floor"];
+  scale [label="Apply gain and scale around the centerline"];
+  oled [label="Draw waveform on OLED"];
+  { rank=same; gate; peak; }
+  { rank=same; gain; floor; }
+  { rank=same; queue; scale; }
+  { rank=same; upload; oled; }
+  input -> shift;
+  shift -> gate [label="Upload path"];
+  shift -> peak [label="Display path"];
+  gate -> gain -> queue -> upload;
+  peak -> floor -> scale -> oled;
+}

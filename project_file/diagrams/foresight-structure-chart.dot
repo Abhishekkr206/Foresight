@@ -1,0 +1,21 @@
+digraph Structure {
+  graph [rankdir=TB, bgcolor=white, pad=0.2, nodesep=0.25, ranksep=0.5, label="Foresight module structure", labelloc=t, fontname=Arial, fontsize=20];
+  node [shape=box, fontname=Arial, fontsize=12, color="#333333", margin="0.14,0.1"];
+  edge [dir=none, color="#333333"];
+  root [label="Foresight"];
+  firmware [label="Beacon firmware"];
+  backend [label="Backend service"];
+  frontend [label="React application"];
+  capture [label="I2S capture\nand OLED"];
+  network [label="Uploads and\nheartbeats"];
+  simulation [label="Scenario\nsimulator"];
+  api [label="Ingestion and\nmonitoring API"];
+  pipeline [label="Scoring and\ncorrelation"];
+  persistence [label="Database and\naudio storage"];
+  dashboard [label="Dashboard and\nevent review"];
+  scenario [label="Scenario Lab"];
+  root -> {firmware backend frontend};
+  firmware -> {capture network};
+  backend -> {simulation api pipeline persistence};
+  frontend -> {dashboard scenario};
+}
