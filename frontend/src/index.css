@@ -780,19 +780,29 @@ body { background: var(--foresight-canvas); color: var(--foresight-ink); font-fa
   }
 }
 
-/* Browser approximation of a moving glass selection and pressure highlights. */
-@supports (backdrop-filter: blur(1px)) {
+/* Web approximation of Liquid Glass for the floating view switch. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   @media not (prefers-reduced-transparency: reduce) {
     .app-topbar .view-switch {
       border-radius: 999px;
-      background: rgba(228, 235, 226, .74) !important;
-      backdrop-filter: blur(14px) saturate(145%);
-      box-shadow: inset 0 1px 1px white, inset 0 -1px 1px #203b3029, 0 2px 7px #203b301a;
+      background:
+        radial-gradient(ellipse at 24% 0%, #ffffffb3, transparent 65%),
+        linear-gradient(180deg, #f5f9f1b8, #dce6d7a3) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(145%);
+      backdrop-filter: blur(18px) saturate(145%);
+      box-shadow:
+        inset 0 1px 1px #fffffff2,
+        inset 0 -1px 1px #203b3033,
+        0 0 0 1px #203b3026,
+        0 5px 16px #203b3026;
     }
     .view-switch::before {
       border-radius: inherit;
-      background: linear-gradient(155deg, #507263dd, #244635ed 62%, #436755ed);
-      box-shadow: inset 1px 1px 1px #ffffffb8, inset -1px -1px 1px #ffffff60, 0 2px 4px #19342736;
+      background: linear-gradient(160deg, #496b58, #234635 62%, #375a46);
+      box-shadow:
+        inset 0 2px 2px #ffffff80,
+        inset 0 -1px 2px #ffffff40,
+        0 2px 5px #19342759;
       transition: transform 360ms cubic-bezier(.25,.94,.32,1.08), scale 180ms ease-out;
     }
     .view-switch:active::before { scale: 1.07 .93; }
